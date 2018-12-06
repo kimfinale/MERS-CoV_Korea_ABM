@@ -14,7 +14,7 @@ public class Hospital {
 	private double                 longitude 	= 0.0;
 	private double                 latitude 	= 0.0;
 	private int                    regionID 	= -999;
-	private double                 dayVaccinationStarted = -999;
+	private double                 dayVaccinationStarted = 0;
 
 	// 0=Gangwon, 1=Gyeonggi, 2=Gyeongnam,
 	// 3=Gyeongbuk, 4=Gwangju, 5=Daegu,
@@ -241,7 +241,7 @@ public class Hospital {
 	// agents get isolated some day after becoming symptomatic: I -> J
 	protected void isolation( Parameters pars, double rate, double maxTimeFromSymptomOnsetToIsolation  ){
 		ArrayList<Agent> agentsIsolated = new ArrayList<Agent> ();
-		int numAlreadyIsolatedAgents = this.getIsolateds().size() + this.getIsolatedRemoveds().size(); // some go to the R state? YES
+//		int numAlreadyIsolatedAgents = this.getIsolateds().size() + this.getIsolatedRemoveds().size(); // some go to the R state? YES
 		for( Agent a : this.getInfectious() ) {
 			if( !a.getInfectionStatus().equals( "I" ) ){
 				System.err.println( "Input agents need to be in the I state!, the current state is " + a.getInfectionStatus() );
@@ -257,9 +257,8 @@ public class Hospital {
 		if( agentsIsolated.size() > 0 ) {
 			this.getIsolateds().addAll( agentsIsolated );
 			this.getInfectious().removeAll( agentsIsolated );
-			if( numAlreadyIsolatedAgents < 1 ) { // if isolation has never occurred, to add only
+			if( !Model.hospitalsCaseIsolated.contains( this ) ) {
 				Model.hospitalsCaseIsolated.add( this );
-				Model.hospitalsCaseNewlyIsolated.add( this );
 			}
 		}
 	}

@@ -125,7 +125,7 @@ public class Step {
 		// The number of vaccine doses needs to account for those who receive but don't take the vaccine.
 		double vaccReceivingProbPerStep = 1 - Math.pow( (1- (vaccCoverage * fracVaccTarget)), 1/numberOfStepsForVaccination );
 		
-		Model.updateHospitalsForVaccinationByDistance( pars );
+		Model.updateHospitalsForVaccination( pars );
 		
 		double durVacc = pars.getTimeNeededForVaccination();
 		for( Hospital h : Model.hospitalsVaccinationImplemented ) {

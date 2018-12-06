@@ -15,13 +15,17 @@ import java.util.Scanner;
 public class Parameters {
 	private int 				debug = 0;
 	private int                 numSampleRun = 2;
-	private int                 randomSeed = 2;
+	private int                 randomSeed = 4;
 	// unit time = day
-	private double              stopTime = 60;
+	private double              stopTime = 20;
 	private double              stepSize = 	0.2;
 	private double              reportFreq = 1;
+	private String 				outbreakScenario = "2015";//2015, importation,
+
 	// vaccination related
 	private boolean 			underVaccinationScenario = true;
+	private String 				vaccinationScenario = "Hospital";//Distance, Region, or Hospital
+
 	private int               	thresholdNumberCaseForVaccinationInitiation = 5;
 	private int               	thresholdDayVaccinationInitiation = 10;
 	private boolean             dayVaccinationStartAdjusted = false; //used as a switch to ensure that vaccination start date is adjusted only once (in response to the number of cases detected)
@@ -32,7 +36,7 @@ public class Parameters {
 	private int 				numHospitalsForTargetedVaccination = 5;
 	private double              hospitalCoverage = 1.0;
 	// parameter to be estimated
-	private double              rateTransmit = 0.15; //  infectious person can transmit infection to a susceptible person with probability of 0.2 
+	private double              rateTransmit = 0.14405; //  infectious person can transmit infection to a susceptible person with probability of 0.2 
 	private double              shapeGammaOffspring = 0.2; // NegBin (Poisson-Gamma) distribution 
 	private double              propSeekingCareFromOtherHospitals = 0.1189189; //0.118; 
 	private double              dayDelayBeforeMovingToAnotherHospital = 1.2; //
@@ -696,6 +700,18 @@ public class Parameters {
 	}
 	public void setDebug( int i ) {
 		debug = i;
+	}
+	public String getVaccinationScenario() {
+		return vaccinationScenario;
+	}
+	public void setVaccinationScenario(String vaccinationScenario) {
+		this.vaccinationScenario = vaccinationScenario;
+	}
+	public String getOutbreakScenario() {
+		return outbreakScenario;
+	}
+	public void setOutbreakScenario(String outbreakScenario) {
+		this.outbreakScenario = outbreakScenario;
 	}
 }
 
