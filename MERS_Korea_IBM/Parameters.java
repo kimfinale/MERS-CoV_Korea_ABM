@@ -25,7 +25,12 @@ public class Parameters {
 	private int               	thresholdNumberCaseForVaccinationInitiation = 5;
 	private int               	thresholdDayVaccinationInitiation = 10;
 	private boolean             dayVaccinationStartAdjusted = false; //used as a switch to ensure that vaccination start date is adjusted only once (in response to the number of cases detected)
-	private double              vaccinationTargetRadius = 20;//km 
+	private double              vaccinationTargetRadius = 20;//km
+	private boolean 			preEmptiveVaccination = false; 
+	private boolean             areaTargetedVaccination = false;
+	private boolean 			hospitalTargetedVaccination = false;
+	private int 				numHospitalsForTargetedVaccination = 5;
+	private double              hospitalCoverage = 1.0;
 	// parameter to be estimated
 	private double              rateTransmit = 0.15; //  infectious person can transmit infection to a susceptible person with probability of 0.2 
 	private double              shapeGammaOffspring = 0.2; // NegBin (Poisson-Gamma) distribution 
@@ -116,11 +121,7 @@ public class Parameters {
 	private double              fracRingIsolation = 0.0;
 //	private double              timelagSymptomOnsetToTransmission = 1.0; // to reflect that symptom have to become severe before going to a hospital and transmit to others
 	private double              timelagSymptomOnsetToTransmissionFirstCase = 4.0; // to reflect that symptom have to become severe before going to a hospital and transmit to others
-	private boolean 			preEmptiveVaccination = false; 
-	private boolean             areaTargetedVaccination = false;
-	private boolean 			hospitalTargetedVaccination = false;
-	private int 				numHospitalsForTargetedVaccination = 5;
-	private double              hospitalCoverage = 1.0;
+
 	
 	
 	

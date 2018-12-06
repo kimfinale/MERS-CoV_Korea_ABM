@@ -459,7 +459,7 @@ public class Step {
 		}
 		double rate = (1 / mean) * pars.getStepSize();
 		for( Hospital hosp : Model.hospitals ) {
-			int numAlreadyIsolated = hosp.getIsolateds().size() + hosp.getIsolatedRemoveds().size(); // record the number of people who were already isolated
+			int numAlreadyIsolated = hosp.getIsolateds().size(); // record the number of people who were already isolated
 			hosp.isolation( pars, rate, max );
 			if( (hosp.getIsolateds().size() - numAlreadyIsolated) > 0 ) { // if anybody were newly isolated
 				hosp.quarantine( pars, rate, max );
