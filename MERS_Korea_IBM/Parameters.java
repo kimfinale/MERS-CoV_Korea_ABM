@@ -23,9 +23,9 @@ public class Parameters {
 	private String 				outbreakScenario = "2015";//2015, importation,
 
 	// vaccination related
-	private boolean 			underVaccinationScenario = true;
+	private boolean 			underVaccinationScenario = false;
 	private String 				vaccinationScenario = "Hospital";//Distance, Region, or Hospital
-
+	private double              vaccCoverage = 0.9;
 	private int               	thresholdNumberCaseForVaccinationInitiation = 5;
 	private int               	thresholdDayVaccinationInitiation = 10;
 	private boolean             dayVaccinationStartAdjusted = false; //used as a switch to ensure that vaccination start date is adjusted only once (in response to the number of cases detected)
@@ -74,7 +74,7 @@ public class Parameters {
 	private int               	dayIntervention = 29; // intense intervention (significant increase in isolation rate starts at day 29 after the first case developed symptoms
 	
 	private double              fracVaccTargetPopulation = 1.0;
-	private double              vaccCoverage = 0.9;
+	
 	private double 				timeNeededForVaccination = 10.0;
 	private double              vaccEfficacy = 0.7;
 	private double              relativeVaccEfficacyPostExposure = 0.5;
@@ -98,17 +98,11 @@ public class Parameters {
 	private double[] 			maxTimeToIsolation = { 13, 5, 0.5 };
 	private int[] 				periodCutOff = { 18, 29 };// first 18 days (May 11-28) and the next 11 days (May 29-Jun 9)
 	
-//	private String 				filePathHospSize = "C:\\Users\\jongHoon.kim\\workspace\\IVI_Projects\\MERS\\Transmission_Modeling\\java\\MERS_Korea_IBM\\pop_risk.csv";
-//	private String 				filePathHospLevel = "C:\\Users\\jongHoon.kim\\workspace\\IVI_Projects\\MERS\\Transmission_Modeling\\java\\MERS_Korea_IBM\\level.csv";
-//	private String 				filePathHospRegion = "C:\\Users\\jongHoon.kim\\workspace\\IVI_Projects\\MERS\\Transmission_Modeling\\java\\MERS_Korea_IBM\\region_id.csv";
-//	private String 				filePathHospLongitude = "C:\\Users\\jongHoon.kim\\workspace\\IVI_Projects\\MERS\\Transmission_Modeling\\java\\MERS_Korea_IBM\\longitude.csv";
-//	private String 				filePathHospLatitude = "C:\\Users\\jongHoon.kim\\workspace\\IVI_Projects\\MERS\\Transmission_Modeling\\java\\MERS_Korea_IBM\\latitude.csv";
-//	
-	private String 				filePathHospSize = "C:/Users/jongHoon.kim/workspace/IVI_Projects/MERS/Transmission_Modeling/pop_risk.csv";
-	private String 				filePathHospLevel = "C:/Users/jongHoon.kim/workspace/IVI_Projects/MERS/Transmission_Modeling/level.csv";
-	private String 				filePathHospRegion = "C:/Users/jongHoon.kim/workspace/IVI_Projects/MERS/Transmission_Modeling/region_id.csv";
-	private String 				filePathHospLongitude = "C:/Users/jongHoon.kim/workspace/IVI_Projects/MERS/Transmission_Modeling/longitude.csv";
-	private String 				filePathHospLatitude = "C:/Users/jongHoon.kim/workspace/IVI_Projects/MERS/Transmission_Modeling/latitude.csv";
+	private String 				filePathHospSize = "C:/Users/jongHoon.kim/workspace/IVI_Projects/MERS/MERS-CoV_Korea_ABM_Analysis/java/MERS-CoV_Korea_ABM/MERS_Korea_IBM/pop_risk.csv";
+	private String 				filePathHospLevel = "C:/Users/jongHoon.kim/workspace/IVI_Projects/MERS/MERS-CoV_Korea_ABM_Analysis/java/MERS-CoV_Korea_ABM/MERS_Korea_IBM/level.csv";
+	private String 				filePathHospRegion = "C:/Users/jongHoon.kim/workspace/IVI_Projects/MERS/MERS-CoV_Korea_ABM_Analysis/java/MERS-CoV_Korea_ABM/MERS_Korea_IBM/region_id.csv";
+	private String 				filePathHospLongitude = "C:/Users/jongHoon.kim/workspace/IVI_Projects/MERS/MERS-CoV_Korea_ABM_Analysis/java/MERS-CoV_Korea_ABM/MERS_Korea_IBM/longitude.csv";
+	private String 				filePathHospLatitude = "C:/Users/jongHoon.kim/workspace/IVI_Projects/MERS/MERS-CoV_Korea_ABM_Analysis/java/MERS-CoV_Korea_ABM/MERS_Korea_IBM/latitude.csv";
 	
 	//	private double              rateMoveToOtherHospital = 0.05; // 22/186 cases, who visited multiple healthcare facilities, translated to rate of moving to other hospital
 	private	int             	numHospital = 100;	// total number of hospitals

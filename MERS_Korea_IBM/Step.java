@@ -189,10 +189,13 @@ public class Step {
 	
 	////////////////////////////////////////////////////////////////////////////////////////
 	// becomeImmune( Parameters pars )
-	// individuals become immune
+	// vaccine recipients become immune 
 	public void stepBecomeImmune( Parameters pars ){
 		ArrayList<Agent> agentImmune = new ArrayList<Agent>();
-		for( Hospital hosp : Model.hospitals ) {
+		ArrayList<Hospital> hospList = new ArrayList<Hospital>();
+		hospList.addAll( Model.hospitals );
+		hospList.addAll( Model.uninfectedHospitals );
+		for( Hospital hosp : hospList ) {
 			ArrayList<Agent> vaccSusc = hosp.getVaccinatedSusceptibles();
 			ArrayList<Agent> vaccProtected = hosp.getVaccinatedProtecteds();
 			for( Agent a : vaccSusc ) {
@@ -217,7 +220,31 @@ public class Step {
 			vaccProtected.addAll( agentImmune );
 			vaccExp.removeAll( agentImmune );
 			agentImmune.clear();
-		
+			
+			ArrayList<Agent> quarantinedVaccSusc = hosp.getQuarantinedVaccinatedSusceptibles();
+			ArrayList<Agent> quarantinedVaccProtected = hosp.getQuarantinedVaccinatedProtecteds();
+			for( Agent a : quarantinedVaccSusc ) {
+				if( a.getDelayVaccineInducedImmunity() < a.getDaySinceVaccination() ) {
+					agentImmune.add( a );
+					a.setInfectionStatus( "QVP" ); // vaccinated and protected
+					pars.setCumulVaccProtected( pars.getCumulVaccProtected() + 1 );
+				}
+			}
+			quarantinedVaccProtected.addAll( agentImmune );
+			quarantinedVaccSusc.removeAll( agentImmune );
+			agentImmune.clear();	
+
+			ArrayList<Agent> quarantinedVaccExp = hosp.getVaccinatedExposeds();
+			for( Agent a : quarantinedVaccExp ) {
+				if( a.getDelayVaccineInducedImmunity() < a.getDaySinceVaccination() ) {
+					agentImmune.add( a );
+					a.setInfectionStatus( "QVP" ); // vaccinated, exposed, and protected
+					pars.setCumulVaccProtected( pars.getCumulVaccProtected() + 1 );
+				}
+			}
+			quarantinedVaccProtected.addAll( agentImmune );
+			quarantinedVaccExp.removeAll( agentImmune );
+			agentImmune.clear();
 		}
 	}
 	

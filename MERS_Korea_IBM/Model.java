@@ -56,9 +56,7 @@ public class Model {
 	// to help implement vaccination
 	static ArrayList<Hospital> hospitalsCaseIsolated = new ArrayList<Hospital>();
 	static ArrayList<Hospital> hospitalsVaccinationImplemented = new ArrayList<Hospital>();
-	
-//	static Set<Agent> agentsVaccineReceived = new HashSet<Agent>();  // to track the number of vaccine doses given
-	
+
 	static Parameters pars = new Parameters ();
 	static Hospital hosp = new Hospital ();
 	static Utility util = new Utility ();
@@ -284,7 +282,6 @@ public class Model {
 			Hospital indexHosp = uninfectedHospitals.get( unifHosp.sample() ); // the index case appears in a random hospital
 			uninfectedHospitals.remove( indexHosp );
 			hospitals.add( indexHosp );	// hospitals where infected peoples exist are separately tracked in the list hospitals
-			
 			
 			ArrayList<Agent> susc = indexHosp.getSusceptibles();
 			

@@ -110,6 +110,15 @@ public class Agent {
 		} else if( status.equals( "E" ) ) {
 			this.setInfectionStatus( "QE");
 		}
+		else if( status.equals( "VS" ) ) {
+			this.setInfectionStatus( "QVS");
+		}
+		else if( status.equals( "VE" ) ) {
+			this.setInfectionStatus( "QVE");
+		}
+		else if( status.equals( "VP" ) ) {
+			this.setInfectionStatus( "QVP");
+		}
 		this.setQuarantined( true );
 
 	}		
