@@ -94,10 +94,7 @@ public class Step {
 		int vaccTargetCaseNumber = pars.getThresholdNumberCaseForVaccinationInitiation();
 		int vaccTargetDate = pars.getThresholdDayVaccinationInitiation();
 		int isolatedCaseUpToNow = Model.getNumPeople( Model.hospitals , "J" );
-		isolatedCaseUpToNow = isolatedCaseUpToNow + Model.getNumPeople( Model.hospitals , "JR" );
-		if( pars.getOutbreakScenario() == "2015" && Step.currentDay >= 9 )
-			isolatedCaseUpToNow = isolatedCaseUpToNow + 1;// this is to cancel the effect of setting the infection status of the index case as R
-			
+		isolatedCaseUpToNow = isolatedCaseUpToNow + Model.getNumPeople( Model.hospitals , "JR" );	
 		if( vaccTargetCaseNumber <= isolatedCaseUpToNow  && Step.currentDay <= vaccTargetDate ) {
 			pars.setDayVaccinationStart( Step.currentDay );
 			pars.setDayVaccinationStartAdjusted( true );
@@ -143,6 +140,8 @@ public class Step {
 	// vaccinate( Parameters pars )
 	// vaccinate on a hospital basis
 	public void stepVaccinate( Parameters pars ){
+		Model.updateHospitalsForVaccination( pars ); // update the list of hospitals 
+		
 		double fracVaccTarget = pars.getFracVaccTargetPopulation(); // <1 in case only HCWs or visitors are vaccinated
 		double vaccDur = pars.getTimeNeededForVaccination();
 		double vaccCoverage = pars.getVaccCoverage();
@@ -157,12 +156,12 @@ public class Step {
 		// The number of vaccine doses needs to account for those who receive but don't take the vaccine.
 		double vaccReceivingProbPerStep = 1 - Math.pow( (1- (vaccCoverage * fracVaccTarget)), 1/numberOfStepsForVaccination );
 		
-		Model.updateHospitalsForVaccination( pars );
+
 		
 		double durVacc = pars.getTimeNeededForVaccination();
 		for( Hospital h : Model.hospitalsVaccinationImplemented ) {
 			double dayVaccStart = h.getDayVaccinationStarted();
-			if( pars.isUnderVaccinationScenario() && dayVaccStart <= currentDay && currentDay < (dayVaccStart + durVacc) ) {
+			if( dayVaccStart <= currentDay && currentDay < (dayVaccStart + durVacc) ) {
 				h.vaccination( pars, vaccProbPerStepSusc, vaccProbPerStepExp, vaccReceivingProbPerStep );
 			}
 			if( pars.getDebug() > 0 )

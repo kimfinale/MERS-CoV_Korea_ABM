@@ -14,7 +14,7 @@ import java.util.Scanner;
 
 public class Parameters {
 	private int 				debug = 0;
-	private int                 numSampleRun = 20;
+	private int                 numSampleRun = 40;
 	private int                 randomSeed = 4;
 	// unit time = day
 	private double              stopTime = 60;
@@ -26,10 +26,10 @@ public class Parameters {
 	private boolean 			underVaccinationScenario = true;
 	private String 				vaccinationScenario = "Distance";//Distance, Region, or Hospital
 	private double              vaccCoverage = 0.9;
-	private int               	thresholdNumberCaseForVaccinationInitiation = 5;
+	private int               	thresholdNumberCaseForVaccinationInitiation = 1;
 	private int               	thresholdDayVaccinationInitiation = 14;
 	private boolean             dayVaccinationStartAdjusted = false; //used as a switch to ensure that vaccination start date is adjusted only once (in response to the number of cases detected)
-	private double              vaccinationTargetRadius = 20;//km
+	private double              vaccinationTargetRadius = 30;//km
 	private boolean 			preEmptiveVaccination = false; 
 	private boolean             areaTargetedVaccination = false;
 	private boolean 			hospitalTargetedVaccination = false;
@@ -38,10 +38,11 @@ public class Parameters {
 	private double              timeIndexCaseConfirmation = 9.0; // reported time for confirmation of the index case(May 20 after May 11 (onset of symptoms)
 	
 	// parameter to be estimated
-	private double              rateTransmit = 0.14405; //  infectious person can transmit infection to a susceptible person with probability of 0.2 
+	private double              rateTransmit = 0.1509069; //  infectious person can transmit infection to a susceptible person with probability of 0.2 
+	private double              dayDelayBeforeMovingToAnotherHospital = 3.3929195; //
 	private double              shapeGammaOffspring = 0.2; // NegBin (Poisson-Gamma) distribution 
 	private double              propSeekingCareFromOtherHospitals = 0.1189189; //0.118; 
-	private double              dayDelayBeforeMovingToAnotherHospital = 1.2; //
+	
 	private double              factorHighRiskTransmissibility = 79.0;
 	
 	// Parameters were estimated from Korean data using coarseDataTools package in R

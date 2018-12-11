@@ -256,7 +256,7 @@ public class Hospital {
 //		int numAlreadyIsolatedAgents = this.getIsolateds().size() + this.getIsolatedRemoveds().size(); // some go to the R state? YES
 		for( Agent a : this.getInfectious() ) {
 			if( !a.getInfectionStatus().equals( "I" ) ){
-				System.err.println( "isolation: Check the infection state of the input agent!, the current state is " + a.getInfectionStatus() );
+				System.err.println( "Hospital.isolation: Check the infection state of the input agent!, the current state is " + a.getInfectionStatus() );
 			}
 			else{
 				if( !a.isIsolated() && ( ( Model.unifFromZeroToOne.sample() < rate ) ||

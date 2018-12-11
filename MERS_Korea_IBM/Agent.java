@@ -107,7 +107,7 @@ public class Agent {
 	public void beQuarantined( Parameters pars ) {
 		String status = this.getInfectionStatus();
 		if( ! ( status.equals( "S" ) || status.equals( "E" ) || status.equals( "VS" ) || status.equals( "VE" )  || status.equals( "VP" )  || status.equals( "R" ) ) ){
-			System.err.println( "<Agent.beQuarantined> Check the infection state of the input agent! The current state is " + status );
+			System.err.println( "Agent.beQuarantined: Check the infection state of the input agent! The current state is " + status );
 		}
 		if( status.equals( "S" ) ) {
 			this.setInfectionStatus( "QS");

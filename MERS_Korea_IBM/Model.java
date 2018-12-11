@@ -684,7 +684,6 @@ public class Model {
 	// update the list of hospitals for vaccination based on the region they belong to
 	//
 	public static void updateHospitalsForVaccinationByRegion( Parameters pars ){
-		
 		// hospitals where isolation occurred but vaccination didn't start
 		ArrayList<Hospital> hospWithIsolationNoVaccination = new ArrayList<Hospital> ();
 		hospWithIsolationNoVaccination.addAll( Model.hospitalsCaseIsolated );
@@ -716,6 +715,14 @@ public class Model {
 	// update the list of hospitals for vaccination based on the region they belong to
 	//
 	public static void updateHospitalsForVaccinationByHospital( Parameters pars ){
+		// hospitals where isolation occurred but vaccination didn't start
+		ArrayList<Hospital> hospWithIsolationNoVaccination = new ArrayList<Hospital> ();
+		hospWithIsolationNoVaccination.addAll( Model.hospitalsCaseIsolated );
+		hospWithIsolationNoVaccination.removeAll( Model.hospitalsVaccinationImplemented );
+		for( Hospital h : hospWithIsolationNoVaccination ) {
+			hospitalsVaccinationImplemented.add( h );
+			h.setDayVaccinationStarted( Step.currentDay );
+		}
 //		Seoul Asan 127.109525587	37.5251582003
 //		Samsung Seoul 127.089591626	37.4903457681
 //		Yonsei Severance 126.940823731	37.5614071269
@@ -729,19 +736,24 @@ public class Model {
 		for( Hospital h: hospitalsSearched  ) {
 			double lon = h.getLongitude();
 			if( 127.10952558 < lon && lon < 127.10952559 ) {
-				Model.hospitalsVaccinationImplemented.add( h );
+				h.setDayVaccinationStarted( Step.currentDay );
+				hospitalsVaccinationImplemented.add( h );
 			}
 			if( 127.08959162 < lon && lon < 127.08959163 ) {
-				Model.hospitalsVaccinationImplemented.add( h );
+				h.setDayVaccinationStarted( Step.currentDay );
+				hospitalsVaccinationImplemented.add( h );
 			}
 			if( 126.94082373 < lon && lon < 126.94082374 ) {
-				Model.hospitalsVaccinationImplemented.add( h );
+				h.setDayVaccinationStarted( Step.currentDay );
+				hospitalsVaccinationImplemented.add( h );
 			}
 			if( 127.0003984 < lon && lon < 127.0003985 ) {
-				Model.hospitalsVaccinationImplemented.add( h );
+				h.setDayVaccinationStarted( Step.currentDay );
+				hospitalsVaccinationImplemented.add( h );
 			}
 			if( 127.00586275 < lon && lon < 127.00586276 ) {
-				Model.hospitalsVaccinationImplemented.add( h );
+				h.setDayVaccinationStarted( Step.currentDay );
+				hospitalsVaccinationImplemented.add( h );
 			}
 		}
 		if( pars.getDebug() > 3 ) {
@@ -749,6 +761,9 @@ public class Model {
 				System.out.printf( "day=%.1f, hospial pop =%d\n", Step.currentDay, h.getPopulationSize() );
 			}
 		}
+//		for( Hospital h: hospitalsVaccinationImplemented  ) {
+//			System.out.printf( "day=%.1f, hospial susc =%d\n", Step.currentDay, h.getSusceptibles().size() );
+//		}
 	}
 	
 	
