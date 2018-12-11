@@ -14,20 +14,20 @@ import java.util.Scanner;
 
 public class Parameters {
 	private int 				debug = 0;
-	private int                 numSampleRun = 2;
+	private int                 numSampleRun = 20;
 	private int                 randomSeed = 4;
 	// unit time = day
-	private double              stopTime = 20;
+	private double              stopTime = 60;
 	private double              stepSize = 	0.2;
 	private double              reportFreq = 1;
 	private String 				outbreakScenario = "2015";//2015, importation,
 
 	// vaccination related
-	private boolean 			underVaccinationScenario = false;
-	private String 				vaccinationScenario = "Hospital";//Distance, Region, or Hospital
+	private boolean 			underVaccinationScenario = true;
+	private String 				vaccinationScenario = "Distance";//Distance, Region, or Hospital
 	private double              vaccCoverage = 0.9;
 	private int               	thresholdNumberCaseForVaccinationInitiation = 5;
-	private int               	thresholdDayVaccinationInitiation = 10;
+	private int               	thresholdDayVaccinationInitiation = 14;
 	private boolean             dayVaccinationStartAdjusted = false; //used as a switch to ensure that vaccination start date is adjusted only once (in response to the number of cases detected)
 	private double              vaccinationTargetRadius = 20;//km
 	private boolean 			preEmptiveVaccination = false; 
@@ -35,6 +35,8 @@ public class Parameters {
 	private boolean 			hospitalTargetedVaccination = false;
 	private int 				numHospitalsForTargetedVaccination = 5;
 	private double              hospitalCoverage = 1.0;
+	private double              timeIndexCaseConfirmation = 9.0; // reported time for confirmation of the index case(May 20 after May 11 (onset of symptoms)
+	
 	// parameter to be estimated
 	private double              rateTransmit = 0.14405; //  infectious person can transmit infection to a susceptible person with probability of 0.2 
 	private double              shapeGammaOffspring = 0.2; // NegBin (Poisson-Gamma) distribution 
@@ -706,6 +708,12 @@ public class Parameters {
 	}
 	public void setOutbreakScenario(String outbreakScenario) {
 		this.outbreakScenario = outbreakScenario;
+	}
+	public double getTimeIndexCaseConfirmation() {
+		return timeIndexCaseConfirmation;
+	}
+	public void setTimeIndexCaseConfirmation(double timeIndexCaseConfirmation) {
+		this.timeIndexCaseConfirmation = timeIndexCaseConfirmation;
 	}
 }
 

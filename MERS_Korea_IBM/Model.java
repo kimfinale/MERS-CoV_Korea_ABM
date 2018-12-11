@@ -95,7 +95,7 @@ public class Model {
 			System.out.println( "i = "  + i );			
 			int numSteps= (int) ( pars.getStopTime() / pars.getReportFreq() );
 //			Parameters pars = new Parameters ();
-//			pars.setRandomSeed( i );
+			pars.setRandomSeed( i );
 
 			double [][] out = runModel( pars );
 			
@@ -106,6 +106,8 @@ public class Model {
 			hospitalsTransmissionOccurred.addValue( out[numSteps-1][8]  );
 			cumulVaccDose.addValue( pars.getCumulVaccDose()  );
 			cumulVaccDoseSet.addValue( getTotalVaccineDosesUsed() );
+			
+			System.out.println( pars.isDayVaccinationStartAdjusted() );
 
 		}
 		double mean = cumCase.getMean();
@@ -239,7 +241,8 @@ public class Model {
 				}
 			}
 			
-			Hospital indexHosp = uninfectedHospitals.get( index  ); // 
+			Hospital indexHosp = uninfectedHospitals.get( index  );
+			indexHosp.setIndexHosp( true );// 
 			uninfectedHospitals.remove( indexHosp );
 			hospitals.add( indexHosp );	// hospitals where infected peoples exist are separately tracked in the list hospitals
 			hospitalsTransmissionOccurred.add( indexHosp );
@@ -247,11 +250,12 @@ public class Model {
 			int offspringSize = pars.getFirstGenerationOffspring2015();
 			
 			ArrayList<Agent> susc = indexHosp.getSusceptibles();
-			ArrayList<Agent> isolatedRemoveds = indexHosp.getIsolatedRemoveds();
+			ArrayList<Agent> removeds = indexHosp.getRemoveds();
 			
 			Agent indexCase = susc.get( 0 );
-			isolatedRemoveds.add( indexCase );
-			indexCase.setInfectionStatus( "R" ); // I
+			indexCase.setIndexCase( true );
+			removeds.add( indexCase );
+			indexCase.setInfectionStatus( "R" ); //removed, later changed to JR in the Step.adjustIndexHospIndexCase method 
 			indexCase.setNumOffspring( offspringSize );
 			indexCase.setHospital( indexHosp );
 			indexCase.setGeneration( 0 );
@@ -520,8 +524,16 @@ public class Model {
 		else if( str.equals( "R" ) ) {
 			for( Hospital h : list ) {
 				num += h.getRemoveds().size();
-				num += h.getIsolatedRemoveds().size();
+			}
+		}
+		else if( str.equals( "VP" ) ) {
+			for( Hospital h : list ) {
 				num += h.getVaccinatedProtecteds().size();
+			}
+		}
+		else if( str.equals( "JR" ) ) {
+			for( Hospital h : list ) {
+				num += h.getIsolatedRemoveds().size();
 			}
 		}
 

@@ -15,7 +15,8 @@ public class Hospital {
 	private double                 latitude 	= 0.0;
 	private int                    regionID 	= -999;
 	private double                 dayVaccinationStarted = 0;
-
+	private boolean                indexHosp = false;
+	
 	// 0=Gangwon, 1=Gyeonggi, 2=Gyeongnam,
 	// 3=Gyeongbuk, 4=Gwangju, 5=Daegu,
 	// 6=Daejeon, 7=Busan, 8=Seoul,
@@ -27,11 +28,12 @@ public class Hospital {
 	private ArrayList<Agent> 			   exposeds 				= new ArrayList<Agent> (); //E
 	private ArrayList<Agent> 			   isolateds 				= new ArrayList<Agent> (); //J
 	private ArrayList<Agent> 			   removeds 				= new ArrayList<Agent> (); //R
-	private ArrayList<Agent> 			   isolatedRemoveds 		= new ArrayList<Agent> (); //R
+	private ArrayList<Agent> 			   isolatedRemoveds 		= new ArrayList<Agent> (); //JR
 
 	private ArrayList<Agent> 			   vaccinatedSusceptibles 	= new ArrayList<Agent> (); //VS
 	private ArrayList<Agent> 			   vaccinatedExposeds 		= new ArrayList<Agent> (); //VE
 	private ArrayList<Agent> 			   vaccinatedProtecteds 	= new ArrayList<Agent> (); //VP
+	
 	private ArrayList<Agent> 			   quarantinedSusceptibles 	= new ArrayList<Agent> (); //QS
 	private ArrayList<Agent> 			   quarantinedExposeds 		= new ArrayList<Agent> (); //QE
 	private ArrayList<Agent> 			   quarantinedVaccinatedSusceptibles 	= new ArrayList<Agent> (); //QVS
@@ -132,9 +134,11 @@ public class Hospital {
 		ArrayList<Agent> agentToMoveToExposed = new ArrayList<Agent> ();
 		ArrayList<Agent> agentToMoveToVaccinatedExposed = new ArrayList<Agent> ();
 		ArrayList<Agent> infectious = this.getInfectious();
+		// susceptibles and vaccinated susceptibles may be infected
 		ArrayList<Agent> totalSusc = new ArrayList<Agent>();
 		totalSusc.addAll( this.getSusceptibles() );
 		totalSusc.addAll( this.getVaccinatedSusceptibles() );
+		
 		double numSusc = totalSusc.size();
 		int popSize = this.getPopulationSize();
 		int newInfections = 0;
@@ -216,10 +220,9 @@ public class Hospital {
 		for( Agent a : totalExposeds ) {
 			String infStatus = a.getInfectionStatus();
 			if( ! ( infStatus.equals( "E" ) || infStatus.equals( "VE" ) ||  infStatus.equals( "QE" ) ||  infStatus.equals( "QVE" ) ) ){
-				System.err.println( "Input agents need to be in the E, VE, or QE state!, the current state is " + infStatus );
+				System.err.println( "infectiousnessDevelopment: check the infection state of the input agents -- " + infStatus );
 			}
 			else {
-				
 				if( a.getDurationOfIncubation() <= a.getDaySinceInfection() ) {
 					if( infStatus.equals( "QE" ) || infStatus.equals( "QVE" ) ) {
 						a.becomeInfectious( pars );
@@ -253,7 +256,7 @@ public class Hospital {
 //		int numAlreadyIsolatedAgents = this.getIsolateds().size() + this.getIsolatedRemoveds().size(); // some go to the R state? YES
 		for( Agent a : this.getInfectious() ) {
 			if( !a.getInfectionStatus().equals( "I" ) ){
-				System.err.println( "Input agents need to be in the I state!, the current state is " + a.getInfectionStatus() );
+				System.err.println( "isolation: Check the infection state of the input agent!, the current state is " + a.getInfectionStatus() );
 			}
 			else{
 				if( !a.isIsolated() && ( ( Model.unifFromZeroToOne.sample() < rate ) ||
@@ -364,6 +367,17 @@ public class Hospital {
 		}
 		this.getQuarantinedVaccinatedProtecteds().addAll( quarantinedVaccinatedProtected );
 		this.getVaccinatedProtecteds().removeAll( quarantinedVaccinatedProtected ); 
+		
+		ArrayList<Agent> quarantinedRecovered = new ArrayList<Agent> ();
+		for( Agent a : this.getRemoveds() ) {
+			if( !a.isQuarantined() && ( Model.unifFromZeroToOne.sample() < rate ) ){
+				a.beQuarantined( pars );
+				quarantinedRecovered.add( a );
+			}
+		}
+		this.getIsolatedRemoveds().addAll( quarantinedRecovered );
+		this.getRemoveds().removeAll( quarantinedRecovered ); 
+
 	}
 
 
@@ -799,8 +813,11 @@ public class Hospital {
 		int numVP = this.getVaccinatedProtecteds().size(); // 
 		int numQS = this.getQuarantinedSusceptibles().size();
 		int numQE = this.getQuarantinedExposeds().size(); // 
+		int numQVS = this.getVaccinatedSusceptibles().size();
+		int numQVE = this.getVaccinatedExposeds().size();
+		int numQVP = this.getVaccinatedProtecteds().size(); // 
 		
-		int pop = numS + numE + numI + numJ + numR + numJR + numVS + numVE + numVP + numQS + numQE;
+		int pop = numS + numE + numI + numJ + numR + numJR + numVS + numVE + numVP + numQS + numQE + numQVS + numQVE + numQVP;
 				
 		return pop;
 	}
@@ -822,6 +839,9 @@ public class Hospital {
 		list.addAll( this.getVaccinatedProtecteds() ); // 
 		list.addAll( this.getQuarantinedSusceptibles() );
 		list.addAll( this.getQuarantinedExposeds() ); // 
+		list.addAll( this.getQuarantinedVaccinatedSusceptibles() );
+		list.addAll( this.getQuarantinedVaccinatedExposeds() );
+		list.addAll( this.getQuarantinedVaccinatedProtecteds() ); // 
 				
 		return list;
 	}
@@ -965,5 +985,11 @@ public class Hospital {
 	}
 	public void setQuarantinedVaccinatedProtecteds(ArrayList<Agent> quarantinedVaccinatedProtecteds) {
 		this.quarantinedVaccinatedProtecteds = quarantinedVaccinatedProtecteds;
+	}
+	public boolean isIndexHosp() {
+		return indexHosp;
+	}
+	public void setIndexHosp(boolean indexHosp) {
+		this.indexHosp = indexHosp;
 	}
 }

@@ -31,6 +31,10 @@ public class Agent {
 		private double                             timeToIsolation = -999.0;
 		private Hospital 						   hospital = null;
 
+		private boolean 						   indexCase = false;
+
+
+
 
 
 	/////////////////////////////////////////////////////////////////////////////////////////////
@@ -102,8 +106,8 @@ public class Agent {
 	//
 	public void beQuarantined( Parameters pars ) {
 		String status = this.getInfectionStatus();
-		if( ! (status.equals( "S" ) || status.equals( "E" )) ){
-			System.err.println( "Input agents need to be in the S or E state!, the current state is " + status );
+		if( ! ( status.equals( "S" ) || status.equals( "E" ) || status.equals( "VS" ) || status.equals( "VE" )  || status.equals( "VP" )  || status.equals( "R" ) ) ){
+			System.err.println( "<Agent.beQuarantined> Check the infection state of the input agent! The current state is " + status );
 		}
 		if( status.equals( "S" ) ) {
 			this.setInfectionStatus( "QS");
@@ -118,6 +122,9 @@ public class Agent {
 		}
 		else if( status.equals( "VP" ) ) {
 			this.setInfectionStatus( "QVP");
+		}
+		else if( status.equals( "R" ) ) {
+			this.setInfectionStatus( "JR");
 		}
 		this.setQuarantined( true );
 
@@ -303,5 +310,11 @@ public class Agent {
 	}
 	public void setInvader(boolean invader) {
 		this.invader = invader;
+	}
+	public boolean isIndexCase() {
+		return indexCase;
+	}
+	public void setIndexCase(boolean indexCase) {
+		this.indexCase = indexCase;
 	}
 }

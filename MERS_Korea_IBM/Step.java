@@ -48,6 +48,9 @@ public class Step {
 		if( pars.isUnderVaccinationScenario() && !pars.isDayVaccinationStartAdjusted()) {
 			adjustVaccinationStartDateByCumulativeIncidence( pars );
 		}
+		if( pars.getOutbreakScenario().equalsIgnoreCase("2015")  ) {
+			adjustIndexHospIndexCase( pars );
+		}
 		if( pars.getDebug() > 0 )
 			System.out.printf( "debug = %d, tick = %.1f, MERSTransmission step method done...\n", pars.getDebug(), Step.currentDay );
 
@@ -90,19 +93,51 @@ public class Step {
 //		if( !adjustedAlready ) {
 		int vaccTargetCaseNumber = pars.getThresholdNumberCaseForVaccinationInitiation();
 		int vaccTargetDate = pars.getThresholdDayVaccinationInitiation();
-		int caseUpToNow = Model.getNumPeople( Model.hospitals , "I" );
-		caseUpToNow = caseUpToNow + Model.getNumPeople( Model.hospitals , "J" );
-		caseUpToNow = caseUpToNow + Model.getNumPeople( Model.hospitals , "R" );
-		caseUpToNow = caseUpToNow + Model.getNumPeople( Model.hospitals , "JR" );
-		if( vaccTargetCaseNumber <= caseUpToNow  && Step.currentDay <= vaccTargetDate ) {
+		int isolatedCaseUpToNow = Model.getNumPeople( Model.hospitals , "J" );
+		isolatedCaseUpToNow = isolatedCaseUpToNow + Model.getNumPeople( Model.hospitals , "JR" );
+		if( pars.getOutbreakScenario() == "2015" && Step.currentDay >= 9 )
+			isolatedCaseUpToNow = isolatedCaseUpToNow + 1;// this is to cancel the effect of setting the infection status of the index case as R
+			
+		if( vaccTargetCaseNumber <= isolatedCaseUpToNow  && Step.currentDay <= vaccTargetDate ) {
 			pars.setDayVaccinationStart( Step.currentDay );
 			pars.setDayVaccinationStartAdjusted( true );
 		}
 
 	}
 	
-
-
+	
+	
+	////////////////////////////////////////////////////////////////////////////////
+	// adjustIndexHospIndexCase()
+	// adjust the start date of vaccination so that the vaccination can takes place in response to the number of cases occurred
+	// and observed
+	public void adjustIndexHospIndexCase( Parameters pars ){
+		if( currentDay <= pars.getTimeIndexCaseConfirmation() && 
+				pars.getTimeIndexCaseConfirmation() < currentDay + pars.getStepSize() ) {
+			for( Hospital h : Model.hospitals ) {
+				if( h.isIndexHosp()) {
+					if( ! Model.hospitalsCaseIsolated.contains( h ) ) {
+						Model.hospitalsCaseIsolated.add( h );
+					}
+					ArrayList<Agent> list = new ArrayList<Agent>();
+					for( Agent a : h.getRemoveds() ) {
+						if( a.isIndexCase() ) {
+							a.setInfectionStatus( "JR" );
+							list.add( a );
+						}
+						break;
+					}
+					h.getRemoveds().removeAll( list );
+					h.getIsolatedRemoveds().addAll( list );
+					break;	
+				}
+			}
+			if( pars.getDebug() > 3 )
+				System.out.println( "index case method done.. tick = " + Step.currentDay );
+		}
+		
+	}
+	
 	
 	/////////////////////////////////////////////////////////////
 	// vaccinate( Parameters pars )
