@@ -63,8 +63,10 @@ public class Step {
 	public void stepTransmit( Parameters pars ){
 		double beta = pars.getRateTransmit() * pars.getStepSize();
 		double shape = pars.getShapeGammaOffspring();
-		for( Hospital hosp : Model.hospitals ) {
-//			System.out.println(   "time = " + Step.currentDay + ", hospital id = " + hosp.getID() + ", inf size = "  + hosp.getInfectious().size() ); 
+		ArrayList<Hospital> targetHosp = new ArrayList<Hospital>();
+		targetHosp.addAll( Model.hospitals );
+		targetHosp.removeAll( Model.hospitalsCaseIsolated );
+		for( Hospital hosp : targetHosp ) {
 			if( hosp.getInfectious().size() > 0 ) {
 				hosp.transmission( pars, beta, shape );
 			}
@@ -141,23 +143,18 @@ public class Step {
 	// vaccinate on a hospital basis
 	public void stepVaccinate( Parameters pars ){
 		Model.updateHospitalsForVaccination( pars ); // update the list of hospitals 
-		
-		double fracVaccTarget = pars.getFracVaccTargetPopulation(); // <1 in case only HCWs or visitors are vaccinated
 		double vaccDur = pars.getTimeNeededForVaccination();
 		double vaccCoverage = pars.getVaccCoverage();
 		double vaccEff = pars.getVaccEfficacy();
 		double relVaccEffPostExp = pars.getRelativeVaccEfficacyPostExposure();
-		double actualVaccCovSusc = vaccCoverage * fracVaccTarget * vaccEff ; // assuming an all-or-nothing vaccine
-		double actualVaccCovExp = vaccCoverage * fracVaccTarget * vaccEff * relVaccEffPostExp;
+		double actualVaccCovSusc = vaccCoverage * vaccEff ; // assuming an all-or-nothing vaccine
+		double actualVaccCovExp = vaccCoverage * vaccEff * relVaccEffPostExp;
 		double numberOfStepsForVaccination = vaccDur / pars.getStepSize();
 		// 1 - (1-vaccProbPerStep)^numberOfStepsForVaccination = actualVaccCov 
 		double vaccProbPerStepSusc = 1 - Math.pow( 1-actualVaccCovSusc, 1/numberOfStepsForVaccination );
 		double vaccProbPerStepExp = 1 - Math.pow( 1-actualVaccCovExp, 1/numberOfStepsForVaccination );
 		// The number of vaccine doses needs to account for those who receive but don't take the vaccine.
-		double vaccReceivingProbPerStep = 1 - Math.pow( (1- (vaccCoverage * fracVaccTarget)), 1/numberOfStepsForVaccination );
-		
-
-		
+		double vaccReceivingProbPerStep = 1 - Math.pow( (1- vaccCoverage), 1/numberOfStepsForVaccination );
 		double durVacc = pars.getTimeNeededForVaccination();
 		for( Hospital h : Model.hospitalsVaccinationImplemented ) {
 			double dayVaccStart = h.getDayVaccinationStarted();
@@ -226,59 +223,53 @@ public class Step {
 	// vaccine recipients become immune 
 	public void stepBecomeImmune( Parameters pars ){
 		ArrayList<Agent> agentImmune = new ArrayList<Agent>();
-		ArrayList<Hospital> hospList = new ArrayList<Hospital>();
-		hospList.addAll( Model.hospitals );
+		ArrayList<Hospital> hospList = Model.hospitals;
 		hospList.addAll( Model.uninfectedHospitals );
 		for( Hospital hosp : hospList ) {
-			ArrayList<Agent> vaccSusc = hosp.getVaccinatedSusceptibles();
-			ArrayList<Agent> vaccProtected = hosp.getVaccinatedProtecteds();
-			for( Agent a : vaccSusc ) {
+			ArrayList<Agent> VS = hosp.getVaccinatedSusceptibles();
+			ArrayList<Agent> VE = hosp.getVaccinatedExposeds();
+			
+			ArrayList<Agent> QVS = hosp.getQuarantinedVaccinatedSusceptibles();
+			ArrayList<Agent> QVE = hosp.getQuarantinedVaccinatedExposeds();
+			
+			
+			for( Agent a : VS ) {
 				if( a.getDelayVaccineInducedImmunity() < a.getDaySinceVaccination() ) {
 					agentImmune.add( a );
 					a.setInfectionStatus( "VP" ); // vaccinated and protected
 					pars.setCumulVaccProtected( pars.getCumulVaccProtected() + 1 );
 				}
 			}
-			vaccProtected.addAll( agentImmune );
-			vaccSusc.removeAll( agentImmune );
-			agentImmune.clear();	
-
-			ArrayList<Agent> vaccExp = hosp.getVaccinatedExposeds();
-			for( Agent a : vaccExp ) {
+			for( Agent a : VE ) {
 				if( a.getDelayVaccineInducedImmunity() < a.getDaySinceVaccination() ) {
 					agentImmune.add( a );
 					a.setInfectionStatus( "VP" ); // vaccinated, exposed, and protected
 					pars.setCumulVaccProtected( pars.getCumulVaccProtected() + 1 );
 				}
 			}
-			vaccProtected.addAll( agentImmune );
-			vaccExp.removeAll( agentImmune );
+			VS.removeAll( agentImmune );
+			VE.removeAll( agentImmune );
+			hosp.getVaccinatedProtecteds().addAll( agentImmune );
+			
 			agentImmune.clear();
 			
-			ArrayList<Agent> quarantinedVaccSusc = hosp.getQuarantinedVaccinatedSusceptibles();
-			ArrayList<Agent> quarantinedVaccProtected = hosp.getQuarantinedVaccinatedProtecteds();
-			for( Agent a : quarantinedVaccSusc ) {
+			for( Agent a : QVS ) {
 				if( a.getDelayVaccineInducedImmunity() < a.getDaySinceVaccination() ) {
 					agentImmune.add( a );
 					a.setInfectionStatus( "QVP" ); // vaccinated and protected
 					pars.setCumulVaccProtected( pars.getCumulVaccProtected() + 1 );
 				}
 			}
-			quarantinedVaccProtected.addAll( agentImmune );
-			quarantinedVaccSusc.removeAll( agentImmune );
-			agentImmune.clear();	
-
-			ArrayList<Agent> quarantinedVaccExp = hosp.getVaccinatedExposeds();
-			for( Agent a : quarantinedVaccExp ) {
+			for( Agent a : QVE ) {
 				if( a.getDelayVaccineInducedImmunity() < a.getDaySinceVaccination() ) {
 					agentImmune.add( a );
 					a.setInfectionStatus( "QVP" ); // vaccinated, exposed, and protected
 					pars.setCumulVaccProtected( pars.getCumulVaccProtected() + 1 );
 				}
 			}
-			quarantinedVaccProtected.addAll( agentImmune );
-			quarantinedVaccExp.removeAll( agentImmune );
-			agentImmune.clear();
+			QVS.removeAll( agentImmune );
+			QVE.removeAll( agentImmune );
+			hosp.getQuarantinedVaccinatedProtecteds().addAll( agentImmune );
 		}
 	}
 	
@@ -319,14 +310,13 @@ public class Step {
 						newHospWithInfectious.add( h2 );
 					} 
 					else{ 
-//						System.out.println( "tick = " + currentDay + ", null returned!" ); 
+						System.out.println( "Step.stepHospitalShopping: tick = " + currentDay + ", null returned!" ); 
 					}
 				}
 			}
 			if( agentsTemp.size() != hospitalsTemp.size() ) {
-				System.err.println( "agents and the number of hospitals to "
-						+ "which they are transferred must be the same. Now agents are " 
-						+ agentsTemp.size() + " and hospitals are " + hospitalsTemp.size() );
+				System.err.println( "Step.stepHospitalShopping: Agents (n=" + agentsTemp.size() + "), "
+						+ "and the number of hospitals (n=" + hospitalsTemp.size() + "), to which they are transferred must be the same." );
 			}
 			if( agentsTemp.size() > 0 ) {
 				hospitalsToMoveFrom.add( h );
@@ -341,18 +331,14 @@ public class Step {
 			Hospital from = hospitalsToMoveFrom.get( i );
 			ArrayList<Hospital> toHospList = hospitalsToMoveTo.get( i );
 			int len = agentList.size();
-//			System.out.println( "time = " + currentDay + ", i = " + i + ", from id = " + from.getID() + ", from inf before = " + from.getInfectious().size() + ", agents size = " + len );
 			for( int j = 0; j < len; ++ j ) {
 				Agent a = agentList.get( j ); 
 				from.getInfectious().remove( a );
-//				System.out.println( "i = " + i + ", j = " + j + ", to id = " + to.get(j).getID() + ", to inf before = " + to.get(j).getInfectious().size() );
 				toHospList.get( j ).getInfectious().add( a );
 				a.setInvader( true );
-//				System.out.println( "i = " + i + ", j = " + j + ", to id = " + to.get(j).getID() + ", to inf = " + to.get(j).getInfectious().size() );
-//				System.out.println( "i = " + i + ", j = " + j + ", from id = " + from.getID() + ", from inf = " + from.getInfectious().size() );
 			}
 		}
-		//to remove duplicate using Set
+		//using Set to remove duplicate 
 		Set<Hospital> hospSet = new LinkedHashSet<Hospital>( newHospWithInfectious );
 		newHospWithInfectious.clear();
 		newHospWithInfectious.addAll( hospSet );

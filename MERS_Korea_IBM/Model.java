@@ -88,7 +88,7 @@ public class Model {
 		DescriptiveStatistics hospitalsWithInfectious = new DescriptiveStatistics();
 		DescriptiveStatistics hospitalsTransmissionOccurred = new DescriptiveStatistics();
 		DescriptiveStatistics cumulVaccDose = new DescriptiveStatistics();
-		DescriptiveStatistics cumulVaccDoseSet = new DescriptiveStatistics();
+		DescriptiveStatistics cumulVaccProtected = new DescriptiveStatistics();
 		
 
 		for( int i = 0; i < pars.getNumSampleRun(); ++i ){
@@ -96,18 +96,19 @@ public class Model {
 			int numSteps= (int) ( pars.getStopTime() / pars.getReportFreq() );
 //			Parameters pars = new Parameters ();
 			pars.setRandomSeed( i );
+			
+//			System.out.println( "vacc efficacy = " + pars.getVaccEfficacy() );
 
 			double [][] out = runModel( pars );
-			
 			
 			cumCase.addValue( out[numSteps-1][6] );
 			offspringVariance.addValue( out[numSteps-1][7] );
 			hospitalsWithInfectious.addValue( Model.hospitals.size() );
 			hospitalsTransmissionOccurred.addValue( out[numSteps-1][8]  );
 			cumulVaccDose.addValue( pars.getCumulVaccDose()  );
-			cumulVaccDoseSet.addValue( getTotalVaccineDosesUsed() );
+			cumulVaccProtected.addValue( pars.getCumulVaccProtected() );
 			
-			System.out.println( pars.isDayVaccinationStartAdjusted() );
+//			System.out.println( pars.isDayVaccinationStartAdjusted() );
 
 		}
 		double mean = cumCase.getMean();
@@ -127,7 +128,7 @@ public class Model {
 		System.out.println( "hospitalsTransmissionOccurred = " + hospitalsTransmissionOccurred.getMean() + ", sd= " + + hospitalsTransmissionOccurred.getStandardDeviation() );
 		System.out.println( "cumulVaccDose = " + cumulVaccDose.getMean() + ", sd = " + + cumulVaccDose.getStandardDeviation() );
 //		System.out.println( "cumulVaccProtected = " + pars.getCumulVaccProtected() );
-		System.out.println( "cumulVaccDoseSet = " + cumulVaccDoseSet.getMean() + ", sd = " + + cumulVaccDoseSet.getStandardDeviation() );
+		System.out.println( "cumulVaccProtected = " + cumulVaccProtected.getMean() + ", sd = " + + cumulVaccProtected.getStandardDeviation() );
 	
 	}
 
@@ -195,6 +196,18 @@ public class Model {
 	// populate agents according to the number of initial population size and initially infecteds
 	// assumes that the index case is high-risk, which is the case for 2015 outbreak
 	public static void modelSetup( Parameters pars ){
+		RNG = new MersenneTwister( pars.getRandomSeed() );
+		unifFromZeroToOne = new UniformRealDistribution( RNG, 0, 1 );
+		gammaIncubationPeriod = 
+				new GammaDistribution( RNG, pars.getShapeGammaDurationOfIncubation(), 1/pars.getRateGammaDurationOfIncubation() );
+		gammaDurationOfInfectiousness = 
+				new GammaDistribution( RNG, pars.getShapeGammaDurationOfInfectiousness(), 1/pars.getRateGammaDurationOfInfectiousness() );
+		gammaDelayVaccineInducedImmunity = 
+				new GammaDistribution( RNG, pars.getShapeGammaDurationOfIncubation(), pars.getMeanDelayVaccineInducedImmunity() / pars.getShapeGammaDurationOfIncubation() );
+		uniformDelay = 
+				new UniformIntegerDistribution( RNG, pars.getMinDelaySymptomOnsetToTransmission2015(), pars.getMaxDelaySymptomOnsetToTransmission2015() );
+		unifFromZeroToOneVacc = new UniformRealDistribution( RNG, 0, 1 );
+		
 		// without setting the arraylists that were created to null, the updated distribution at the end of the previous simulation
 		// become the initial distribution when running from rJava.
 		hospitals = new ArrayList<Hospital>();
@@ -226,6 +239,8 @@ public class Model {
 				uninfectedHospitals.add( h );
 			}
 		}
+		// renew random number for the hospital size, which is used to select an index hospital under importation 
+		unifHosp = new UniformIntegerDistribution( RNG, 0, uninfectedHospitals.size() - 1 );
 		
 		String scenario = pars.getOutbreakScenario();
 		
@@ -479,19 +494,6 @@ public class Model {
 	// renew the random number generators such that we get the same result in case we don't change the random seed in R (via rJava) and Java
 	//
 	public static void renewRandomNumberGenerators( Parameters pars ){
-		RNG = new MersenneTwister( pars.getRandomSeed() );
-		unifFromZeroToOne = new UniformRealDistribution( RNG, 0, 1 );
-		gammaIncubationPeriod = 
-				new GammaDistribution( RNG, pars.getShapeGammaDurationOfIncubation(), 1/pars.getRateGammaDurationOfIncubation() );
-		gammaDurationOfInfectiousness = 
-				new GammaDistribution( RNG, pars.getShapeGammaDurationOfInfectiousness(), 1/pars.getRateGammaDurationOfInfectiousness() );
-		gammaDelayVaccineInducedImmunity = 
-				new GammaDistribution( RNG, pars.getShapeGammaDurationOfIncubation(), pars.getMeanDelayVaccineInducedImmunity() / pars.getShapeGammaDurationOfIncubation() );
-		unifHosp = new UniformIntegerDistribution( RNG, 0, hospPopAtRisk.size() - 1 );
-		uniformDelay = 
-				new UniformIntegerDistribution( RNG, pars.getMinDelaySymptomOnsetToTransmission2015(), pars.getMaxDelaySymptomOnsetToTransmission2015() );
-		unifFromZeroToOneVacc = new UniformRealDistribution( RNG, 0, 1 );
-		
 	}
 
 	
