@@ -36,11 +36,10 @@ public class Hospital {
 	
 	private ArrayList<Agent> 			   quarantinedSusceptibles 	= new ArrayList<Agent> (); //QS
 	private ArrayList<Agent> 			   quarantinedExposeds 		= new ArrayList<Agent> (); //QE
+	
 	private ArrayList<Agent> 			   quarantinedVaccinatedSusceptibles 	= new ArrayList<Agent> (); //QVS
 	private ArrayList<Agent> 			   quarantinedVaccinatedExposeds 		= new ArrayList<Agent> (); //QVE
 	private ArrayList<Agent> 			   quarantinedVaccinatedProtecteds 		= new ArrayList<Agent> (); //QVP
-	
-	
 	
 	private ArrayList<Agent> 			   vaccineReceived 		= new ArrayList<Agent> (); // to track the total number of vaccine doses
 	
@@ -131,10 +130,10 @@ public class Hospital {
 	// transmission( Parameters pars, double beta, double shape )
 	//
 	public void transmission( Parameters pars, double beta, double shape ) {
-		ArrayList<Agent> agentToMoveToExposed = new ArrayList<Agent> ();
-		ArrayList<Agent> agentToMoveToVaccinatedExposed = new ArrayList<Agent> ();
+		ArrayList<Agent> SToE = new ArrayList<Agent> ();
+		ArrayList<Agent> VSToVE = new ArrayList<Agent> ();
 		ArrayList<Agent> infectious = this.getInfectious();
-
+		
 		ArrayList<Agent> totalSusc = new ArrayList<Agent>();
 		totalSusc.addAll( this.getSusceptibles() );
 		totalSusc.addAll( this.getVaccinatedSusceptibles() );
@@ -150,7 +149,6 @@ public class Hospital {
 				System.out.printf( "tick = %.1f, transmission begin .. infectious id = %d\n", Step.currentDay, a.getID() );
 			double fracSusc = (double) numSusc / popSize; //updated for each infectious individual
 			if( fracSusc > 0 ) {
-			// assuming frequency-dependent transmission leading to mean decreasing proportionally to the fraction of susceptible
 				PoissonDistribution pois = new PoissonDistribution( Model.RNG, beta * fracSusc, 1E-12, 10000000 );
 				if( a.isHighInfectivity() && a.isInvader() ) { // we may just need to check invader status as all invaders have to be high-risk
 					double scale = beta * fracSusc * factor / shape; // scale for the gamma distribution is by mean divided by shape
@@ -173,9 +171,9 @@ public class Hospital {
 						offspring.add( b );
 						b.setInfectedHospitalID( this.getID() );
 						if( b.getInfectionStatus().equals("S") ) {
-							agentToMoveToExposed.add( b );
+							SToE.add( b );
 						} else if( b.getInfectionStatus().equals("VS") ) {
-							agentToMoveToVaccinatedExposed.add( b );
+							VSToVE.add( b );
 						}
 						
 						if( pars.getDebug() > 2 )
@@ -190,12 +188,14 @@ public class Hospital {
 			}
 		}
 		if( transmissionOccurred ) {
-			Model.hospitalsTransmissionOccurred.add( this );
+			if( !Model.hospitalsTransmissionOccurred.contains( this ) ) {
+				Model.hospitalsTransmissionOccurred.add( this );
+			}
 		}
-		this.getSusceptibles().removeAll( agentToMoveToExposed );
-		this.getExposeds().addAll( agentToMoveToExposed );
-		this.getVaccinatedSusceptibles().removeAll( agentToMoveToVaccinatedExposed );
-		this.getVaccinatedExposeds().addAll( agentToMoveToVaccinatedExposed );
+		this.getExposeds().addAll( SToE );
+		this.getVaccinatedExposeds().addAll( VSToVE );
+		this.getSusceptibles().removeAll( SToE );
+		this.getVaccinatedSusceptibles().removeAll( VSToVE );
 
 	}		
 	
@@ -204,44 +204,64 @@ public class Hospital {
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// transmission( Parameters pars )
 	//
-	public void infectiousnessDevelopment( Parameters pars ) {
-		ArrayList<Agent> agentsToBecomeInfectious = new ArrayList<Agent> ();
-		ArrayList<Agent> agentsToBeIsolated = new ArrayList<Agent> (); // quarantined exposeds are isolated as soon as they develop symptoms
-		
-		ArrayList<Agent> E = this.getExposeds();
-		ArrayList<Agent> VE = this.getVaccinatedExposeds(); // vaccinated people may become infectious
-		ArrayList<Agent> QE = this.getQuarantinedExposeds();
-		ArrayList<Agent> QVE = this.getQuarantinedVaccinatedExposeds();
-		ArrayList<Agent> totalExposeds = new ArrayList<Agent> ();
-		totalExposeds.addAll( E );
-		totalExposeds.addAll( VE );
-		totalExposeds.addAll( QE );
-		totalExposeds.addAll( QVE );
-		for( Agent a : totalExposeds ) {
-			String infStatus = a.getInfectionStatus();
-			if( ! ( infStatus.equals( "E" ) || infStatus.equals( "VE" ) ||  infStatus.equals( "QE" ) ||  infStatus.equals( "QVE" ) ) ){
-				System.err.println( "infectiousnessDevelopment: check the infection state of the input agents -- " + infStatus );
+	public void becomingInfectious( Parameters pars ) {
+		ArrayList<Agent> EToI = new ArrayList<Agent> ();
+		for( Agent a : this.getExposeds() ) {
+			String status = a.getInfectionStatus();
+			if( ! ( status.equals( "E" ) ) ){
+				System.err.println( "Hospital.infectiousnessDevelopment: infection status have to be E. The current status is " + status );
 			}
-			else {
-				if( a.getDurationOfIncubation() <= a.getDaySinceInfection() ) {
-					if( infStatus.equals( "QE" ) || infStatus.equals( "QVE" ) ) {
-						a.becomeInfectious( pars );
-						a.beIsolated( pars );// quarantined individuals are isolated as soon as they develop symptoms
-						agentsToBeIsolated.add( a );
-					} else {
-						a.becomeInfectious( pars );
-						agentsToBecomeInfectious.add( a );
-					}
-				}
+			else if( a.getDurationOfIncubation() <= a.getDaySinceInfection() ) {
+				EToI.add( a );
+				a.becomeInfectious( pars );
 			}
 		}
-		E.removeAll( agentsToBecomeInfectious );
-		VE.removeAll( agentsToBecomeInfectious );
-		QE.removeAll( agentsToBeIsolated );
-		QVE.removeAll( agentsToBeIsolated );
+		this.getExposeds().removeAll( EToI ); 
+		this.getInfectious().addAll( EToI );	
 		
-		this.getInfectious().addAll( agentsToBecomeInfectious ); // vaccinated & infected are not different from unvaccinated and infected
-		this.getIsolateds().addAll( agentsToBeIsolated );
+		ArrayList<Agent> VEToI = new ArrayList<Agent> ();	
+		for( Agent a : this.getVaccinatedExposeds() ) {
+			String status = a.getInfectionStatus();
+			if( ! ( status.equals( "VE" ) ) ){
+				System.err.println( "Hospital.infectiousnessDevelopment: infection status have to be VE. The current status is " + status );
+			}
+			else if( a.getDurationOfIncubation() <= a.getDaySinceInfection() ) {
+				VEToI.add( a );
+				a.becomeInfectious( pars );
+			}
+		}
+		this.getVaccinatedExposeds().removeAll( VEToI ); 
+		this.getInfectious().addAll( VEToI );
+		
+		ArrayList<Agent> QEToJ = new ArrayList<Agent> ();
+		for( Agent a : this.getQuarantinedExposeds() ) {
+			String status = a.getInfectionStatus();
+			if( ! ( status.equals( "QE" ) ) ){
+				System.err.println( "Hospital.infectiousnessDevelopment: infection status have to be QE. The current status is " + status );
+			}
+			else if( a.getDurationOfIncubation() <= a.getDaySinceInfection() ) {
+				QEToJ.add( a );
+				a.becomeInfectious( pars ); // needed to get the incidence increased although it immediately isolated 
+				a.beIsolated( pars );
+			}
+		}
+		this.getQuarantinedExposeds().removeAll( QEToJ ); 
+		this.getIsolateds().addAll( QEToJ );
+		
+		ArrayList<Agent> QVEToJ = new ArrayList<Agent> ();
+		for( Agent a : this.getQuarantinedVaccinatedExposeds() ) {
+			String status = a.getInfectionStatus();
+			if( ! ( status.equals( "QVE" ) ) ){
+				System.err.println( "Hospital.infectiousnessDevelopment: infection status have to be QE. The current status is " + status );
+			}
+			else if( a.getDurationOfIncubation() <= a.getDaySinceInfection() ) {
+				QVEToJ.add( a );
+				a.becomeInfectious( pars );// needed to get the incidence increased although it immediately isolated 
+				a.beIsolated( pars );
+			}
+		}
+		this.getQuarantinedVaccinatedExposeds().removeAll( QVEToJ ); 
+		this.getIsolateds().addAll( QVEToJ );
 		
 	}		
 	
@@ -252,23 +272,22 @@ public class Hospital {
 	// isolation( Parameter pars )
 	// agents get isolated some day after becoming symptomatic: I -> J
 	protected void isolation( Parameters pars, double rate, double maxTimeFromSymptomOnsetToIsolation  ){
-		ArrayList<Agent> agentIsolated = new ArrayList<Agent> ();
+		ArrayList<Agent> agentsIsolated = new ArrayList<Agent> ();
 		for( Agent a : this.getInfectious() ) {
 			if( !a.getInfectionStatus().equals( "I" ) ){
-				System.err.println( "Hospital.isolation: infection status have to be I, the current state is " + a.getInfectionStatus() );
+				System.err.println( "Hospital.isolation: Infection status have to be I. The current state is " + a.getInfectionStatus() );
 			}
 			else{
 				if( !a.isIsolated() && ( ( Model.unifFromZeroToOne.sample() < rate ) ||
 						( a.getDaySinceSymptomOnset() >= maxTimeFromSymptomOnsetToIsolation ) ) ){
 					a.beIsolated( pars );
-					agentIsolated.add( a );
+					agentsIsolated.add( a );
 				}
 			}
 		}
-		if( agentIsolated.size() > 0 ) {
-			this.getInfectious().removeAll( agentIsolated );
-			this.getIsolateds().addAll( agentIsolated );
-			
+		if( agentsIsolated.size() > 0 ) {
+			this.getIsolateds().addAll( agentsIsolated );
+			this.getInfectious().removeAll( agentsIsolated );
 			if( !Model.hospitalsCaseIsolated.contains( this ) ) {
 				Model.hospitalsCaseIsolated.add( this );
 			}
@@ -283,30 +302,34 @@ public class Hospital {
 	// isolation( Parameter pars )
 	// agents get isolated some day after becoming symptomatic: I -> J
 	protected void removal( Parameters pars ){
-		ArrayList<Agent> selectedForRecovery = new ArrayList<Agent> ();
-		ArrayList<Agent> selectedForRecoveryIsolated = new ArrayList<Agent> ();
-		
-		ArrayList<Agent> subjects = this.getInfectious();
-		subjects.addAll( this.getIsolateds() );
-		for( Agent a : subjects ) {
+		ArrayList<Agent> IToR = new ArrayList<Agent> ();
+		for( Agent a : this.getInfectious() ) {
 			String status = a.getInfectionStatus();
-			if( ! (status.equals( "I" ) ||status.equals( "J" )) ){
-				System.err.println( "Hospital.removal: Input agents need to be in the I or J state!, the current state is " + a.getInfectionStatus() );
+			if( ! ( status.equals( "I" ) ) ){
+				System.err.println( "Hospital.removal: Infection status have to be I. The current status is " + a.getInfectionStatus() );
 			}
-			else if( status.equals( "I" ) && ( a.getDurationOfInfectiousness() <= a.getDaySinceSymptomOnset() ) ){
-					a.setInfectionStatus( "R" );
-					selectedForRecovery.add( a );
-			}
-			else if( status.equals( "J" ) && ( a.getDurationOfInfectiousness() <= a.getDaySinceSymptomOnset() ) ){
-					a.setInfectionStatus( "JR" );
-					selectedForRecoveryIsolated.add( a );
+			if ( a.getDurationOfInfectiousness() <= a.getDaySinceSymptomOnset() ) {
+				a.setInfectionStatus( "R" );
+				IToR.add( a );
 			}
 		}
+		this.getInfectious().removeAll( IToR );
+		this.getRemoveds().addAll( IToR );
 		
-		this.getInfectious().removeAll( selectedForRecovery );
-		this.getIsolateds().removeAll( selectedForRecoveryIsolated );
-		this.getRemoveds().addAll( selectedForRecovery );
-		this.getIsolatedRemoveds().addAll( selectedForRecoveryIsolated );
+		ArrayList<Agent> JToJR = new ArrayList<Agent> ();
+		for( Agent a : this.getIsolateds() ) {
+			String status = a.getInfectionStatus();
+			if( ! ( status.equals( "J" ) ) ){
+				System.err.println( "Hospital.removal: Infection status have to be J. The current status is " + a.getInfectionStatus() );
+			}
+			if ( a.getDurationOfInfectiousness() <= a.getDaySinceSymptomOnset() ) {
+				a.setInfectionStatus( "JR" );
+				JToJR.add( a );
+			}
+		}
+		this.getIsolateds().removeAll( JToJR );
+		this.getIsolatedRemoveds().addAll( JToJR );
+
 	}
 	
 
@@ -323,29 +346,29 @@ public class Hospital {
 				quarantined.add( a );
 			}
 		}
-		this.getExposeds().removeAll( quarantined );
 		this.getQuarantinedExposeds().addAll( quarantined );
+		this.getExposeds().removeAll( quarantined );
 		
 		quarantined.clear();
+		
 		for( Agent a : this.getSusceptibles() ) {
 			if( !a.isQuarantined() && ( Model.unifFromZeroToOne.sample() < rate ) ){
 				a.beQuarantined( pars );
 				quarantined.add( a );
 			}
 		}
-		this.getSusceptibles().removeAll( quarantined );//removed from infection transmission
 		this.getQuarantinedSusceptibles().addAll( quarantined );
+		this.getSusceptibles().removeAll( quarantined );//removed from infection transmission
 		
 		quarantined.clear();
-		
 		for( Agent a : this.getVaccinatedSusceptibles() ) {
 			if( !a.isQuarantined() && ( Model.unifFromZeroToOne.sample() < rate ) ){
 				a.beQuarantined( pars );
 				quarantined.add( a );
 			}
 		}
-		this.getVaccinatedSusceptibles().removeAll( quarantined ); //removed from infection transmission
 		this.getQuarantinedVaccinatedSusceptibles().addAll( quarantined );
+		this.getVaccinatedSusceptibles().removeAll( quarantined ); //removed from infection transmission
 		
 		quarantined.clear();
 		for( Agent a : this.getVaccinatedExposeds() ) {
@@ -354,19 +377,18 @@ public class Hospital {
 				quarantined.add( a );
 			}
 		}
-		this.getVaccinatedExposeds().removeAll( quarantined ); //removed from infection transmission
 		this.getQuarantinedVaccinatedExposeds().addAll( quarantined );
+		this.getVaccinatedExposeds().removeAll( quarantined ); //removed from infection transmission
 		
 		quarantined.clear();
-		
 		for( Agent a : this.getVaccinatedProtecteds() ) {
 			if( !a.isQuarantined() && ( Model.unifFromZeroToOne.sample() < rate ) ){
 				a.beQuarantined( pars );
 				quarantined.add( a );
 			}
 		}
-		this.getVaccinatedProtecteds().removeAll( quarantined ); 
 		this.getQuarantinedVaccinatedProtecteds().addAll( quarantined );
+		this.getVaccinatedProtecteds().removeAll( quarantined ); 
 		
 		quarantined.clear();
 		for( Agent a : this.getRemoveds() ) {
@@ -375,8 +397,14 @@ public class Hospital {
 				quarantined.add( a );
 			}
 		}
-		this.getRemoveds().removeAll( quarantined ); 
 		this.getIsolatedRemoveds().addAll( quarantined );
+		this.getRemoveds().removeAll( quarantined ); 
+		if( pars.getDebug() > 0 ) {
+			System.out.printf( "Day: %.1f, Step.quarantine occurred.\n", Step.currentDay );
+			for(Hospital h : Model.hospitals ) {
+				h.printSelf();
+			}
+		}
 	}
 
 
@@ -386,24 +414,23 @@ public class Hospital {
 	//
 	public void vaccination( Parameters pars, double vaccProbPerStepSusc, double vaccProbPerStepExp, double vaccReceivingProbPerStep ){
 		ArrayList<Agent> agentVaccinated = new ArrayList<Agent>();
-		ArrayList<Agent> susc = this.getSusceptibles();
-		ArrayList<Agent> exposed = this.getExposeds();
-		ArrayList<Agent> quarantinedSusc = this.getQuarantinedSusceptibles();
-		ArrayList<Agent> quarantinedExp = this.getQuarantinedExposeds();
+		ArrayList<Agent> S = this.getSusceptibles();
+		ArrayList<Agent> E = this.getExposeds();
+		ArrayList<Agent> QS = this.getQuarantinedSusceptibles();
+		ArrayList<Agent> QE = this.getQuarantinedExposeds();
 		// Ensure that people get vaccinated only once for the correct number of vaccines, i.e., account for those who receive vaccine and don't become immune
 		ArrayList<Agent> vaccReceivedAlready = this.getVaccineReceived() ;
-		susc.removeAll( vaccReceivedAlready ); 
-		exposed.removeAll( vaccReceivedAlready );
-		quarantinedSusc.removeAll( vaccReceivedAlready );
-		quarantinedExp.removeAll( vaccReceivedAlready );
-		for( Agent a : susc ) {
+		S.removeAll( vaccReceivedAlready ); 
+		E.removeAll( vaccReceivedAlready );
+		QS.removeAll( vaccReceivedAlready );
+		QE.removeAll( vaccReceivedAlready );
+		for( Agent a : S ) {
 			double u = Model.unifFromZeroToOneVacc.sample(); 
 			if( u < vaccProbPerStepSusc ) {
 				a.setDaySinceVaccination( 0.0 );
 				a.gammaDelayVaccineInducedImmunity();
 				a.setInfectionStatus( "VS" ); // efficacy is interpreted as being the fraction to be 
 				agentVaccinated.add( a );
-				
 			}
 			if( u < vaccReceivingProbPerStep ) {
 				vaccReceivedAlready.add( a );
@@ -411,10 +438,10 @@ public class Hospital {
 			}
 		}
 		this.getVaccinatedSusceptibles().addAll( agentVaccinated );
-		susc.removeAll( agentVaccinated );
-		agentVaccinated.clear();
+		S.removeAll( agentVaccinated );
 		
-		for( Agent a : exposed ) {
+		agentVaccinated.clear();
+		for( Agent a : E ) {
 			double u = Model.unifFromZeroToOneVacc.sample();
 			if( u < vaccProbPerStepExp ) {
 				a.setDaySinceVaccination( 0.0 );
@@ -428,77 +455,73 @@ public class Hospital {
 			}
 		}
 		this.getVaccinatedExposeds().addAll( agentVaccinated );
-		exposed.removeAll( agentVaccinated );
-		agentVaccinated.clear();
+		E.removeAll( agentVaccinated );
 		
-		for( Agent a : quarantinedSusc ) {
-			double u = Model.unifFromZeroToOneVacc.sample(); 
-			if( u < vaccProbPerStepSusc ) {
+		agentVaccinated.clear();
+		for( Agent a : QS ) {
+			double u1 = Model.unifFromZeroToOneVacc.sample(); 
+			if( u1 < vaccProbPerStepSusc ) {
 				a.setDaySinceVaccination( 0.0 );
 				a.gammaDelayVaccineInducedImmunity();
 				a.setInfectionStatus( "QVS" ); // efficacy is interpreted as being the fraction to be 
 				agentVaccinated.add( a );
 				
 			}
-			if( u < vaccReceivingProbPerStep ) {
+			if( u1 < vaccReceivingProbPerStep ) {
 				vaccReceivedAlready.add( a );
 				pars.setCumulVaccDose( pars.getCumulVaccDose() + 1 );
 			}
 		}
 		this.getQuarantinedVaccinatedSusceptibles().addAll( agentVaccinated );
-		quarantinedSusc.removeAll( agentVaccinated );
-		agentVaccinated.clear();
+		QS.removeAll( agentVaccinated );
 		
-		for( Agent a : quarantinedExp ) {
-			double u = Model.unifFromZeroToOneVacc.sample();
-			if( u < vaccProbPerStepExp ) {
+		agentVaccinated.clear();
+		for( Agent a : QE ) {
+			double u2 = Model.unifFromZeroToOneVacc.sample();
+			if( u2 < vaccProbPerStepExp ) {
 				a.setDaySinceVaccination( 0.0 );
 				a.gammaDelayVaccineInducedImmunity();
 				a.setInfectionStatus( "QVE" );
 				agentVaccinated.add( a );
 			}
-			if( u < vaccReceivingProbPerStep ) {
+			if( u2 < vaccReceivingProbPerStep ) {
 				vaccReceivedAlready.add( a );
 				pars.setCumulVaccDose( pars.getCumulVaccDose() + 1 );
 			}
 		}
 		this.getQuarantinedVaccinatedExposeds().addAll( agentVaccinated );
-		quarantinedExp.removeAll( agentVaccinated );
-		agentVaccinated.clear();
+		QE.removeAll( agentVaccinated );
 	}
 	
 	
 	
 
-
+	
 	////////////////////////////////////////////////////////////////////////////////
 	// selectHospital()
 	// select one hospital to move arch hospitals within certain distance
 	//
 	public Hospital selectHospital( Parameters pars ){
 		ArrayList<Hospital> targetHosp = new ArrayList<Hospital>();
+		ArrayList<Hospital> hospPool = new ArrayList<Hospital>();
 		double distCutoff = pars.getRadiusHospitalSearch();
-		double myPop = this.getPopulationSize();
 		double myLon = this.getLongitude();
 		double myLat = this.getLatitude();
-		int iter = Model.uninfectedHospitals.size(); 
-		// case can go to any hospital from the Level 4 hospitals in Seoul
-		ArrayList<Hospital> hospitalPool = new ArrayList<Hospital>();
-		hospitalPool.addAll( Model.hospitals );
-		hospitalPool.addAll( Model.uninfectedHospitals );
-		hospitalPool.removeAll( Model.hospitalsCaseIsolated );
+		hospPool.addAll( Model.hospitals );
+		hospPool.addAll( Model.uninfectedHospitals );
+		hospPool.removeAll( Model.hospitalsCaseIsolated );
+		// case can go any hospital from the Level 4 hospitals in Seoul
 		if( this.getLevel() == 4 && this.getRegionID() == 8 ) { 
-			targetHosp.addAll( hospitalPool );
+			targetHosp.addAll( Model.uninfectedHospitals );
 		}
 		else {
-			for( Hospital h : hospitalPool ) {
+			for( Hospital h : hospPool ) {
 				double d = util.getDistance( myLat, h.getLatitude(), myLon, h.getLongitude() ); 
 				if( d < distCutoff || ( h.getLevel() == 4 && h.getRegionID() == 8 ) ) {// Level 4 Hospitals in Seoul are always accessible 
 					targetHosp.add( h );
 				}
 			}
-		}
-		
+		}		
 		if( targetHosp.size() > 0 ) {// no target hospital then stay where you are			 
 			int N = targetHosp.size();
 			int[] popCumSum = new int[ N ];
@@ -511,7 +534,7 @@ public class Hospital {
 	        int index = 0;
 	        double r = Model.unifFromZeroToOne.sample();
 	        for( int i = 0; i < N; ++ i ) {       	
-	        	if( r <= ( (double) popCumSum[ i ] / popCumSum[ N-1 ] ) ) {
+	        	if( r <= ( (double) popCumSum[i] / popCumSum[N-1] ) ) {
 	        		index = i;
 	        		break;
 	        	}
@@ -723,7 +746,6 @@ public class Hospital {
 		ArrayList<Agent> list = new ArrayList<Agent>();
 		// exposed to the infected persons
 		list.addAll( this.getExposeds() );		
-		list.addAll( this.getQuarantinedExposeds() );
 		list.addAll( this.getInfectious() );
 		list.addAll( this.getIsolateds() );
 		list.addAll( this.getRemoveds() );
@@ -732,6 +754,7 @@ public class Hospital {
 		list.addAll( this.getVaccinatedSusceptibles() );
 		list.addAll( this.getVaccinatedExposeds() );
 		// exposed to the vaccine and then quarantined
+		list.addAll( this.getQuarantinedExposeds() );
 		list.addAll( this.getQuarantinedVaccinatedSusceptibles() );
 		list.addAll( this.getQuarantinedVaccinatedExposeds() );
 		return list;
@@ -749,9 +772,11 @@ public class Hospital {
 		int numJ = this.getIsolateds().size();
 		int numR = this.getRemoveds().size();
 		int numJR = this.getIsolatedRemoveds().size();
+		
 		int numVS = this.getVaccinatedSusceptibles().size();
 		int numVE = this.getVaccinatedExposeds().size();
 		int numVP = this.getVaccinatedProtecteds().size(); // 
+		
 		int numQS = this.getQuarantinedSusceptibles().size();
 		int numQE = this.getQuarantinedExposeds().size(); // 
 		int numQVS = this.getQuarantinedVaccinatedSusceptibles().size();
@@ -792,8 +817,16 @@ public class Hospital {
 	// printSelf()
 	// print information such as ID, degree, risk group,  
 	public void printSelf () {
-		System.out.println( 
-				"ID: " + getID() );
+		for( Agent a : getExposeds() ) {
+			System.out.println( "Exposed list: " + a.getInfectionStatus() );
+		}
+		for( Agent a : getInfectious() ) {
+			System.out.println( "Infectious list: " + a.getInfectionStatus() );
+		}
+		
+		for( Agent a : getIsolateds() ) {
+			System.out.println( "Isolated list: " + a.getInfectionStatus() );
+		}
 	}
 
 

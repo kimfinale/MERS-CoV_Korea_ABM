@@ -84,8 +84,12 @@ public class Agent {
 	///////////////////////////////////////////////////////////////////////////
 	//
 	public void becomeInfectious( Parameters pars ) {
-		pars.setCumulInc( pars.getCumulInc() + 1 ); // increase the cumulative incidence by 1 (on a symptom basis)
-		this.setInfectionStatus( "I" );
+		String status = this.getInfectionStatus();
+		if( ! ( status.equals( "E" ) || status.equals( "QE" ) || status.equals( "VE" ) ) ){
+			System.err.println( "Agent.becomeInfectious: infection status have to be E, QE, or VE. The current state is " + status );
+		}
+		pars.setCumulInc( pars.getCumulInc() + 1 ); // increase the cumulative incidence by 1
+		this.setInfectionStatus( "I" ); 
 		this.setDurationOfInfectiousness( Model.gammaDurationOfInfectiousness.sample() );
 		this.setDaySinceSymptomOnset( 0.0 );
 	}
@@ -94,12 +98,16 @@ public class Agent {
 	///////////////////////////////////////////////////////////////////////////
 	//
 	public void beIsolated( Parameters pars ) {
-		if( !this.getInfectionStatus().equalsIgnoreCase( "I") )
-			System.err.println( "Agent.beIsolated: Input agent have to be in I state. Current state is " + this.getInfectionStatus() );
+		String status = this.getInfectionStatus();
+		if( ! status.equals( "I" ) ){
+			System.err.println( "Agent.beIsolated: infection status have to be I. The current state is " + status );
+		}
 		this.setInfectionStatus( "J" );
 		this.setIsolated( true );
 		this.setInfectivity( this.getInfectivity() * pars.getFactorBetaReduceIsolated() );
 	}
+	
+	
 	
 	
 	///////////////////////////////////////////////////////////////////////////
@@ -107,7 +115,7 @@ public class Agent {
 	public void beQuarantined( Parameters pars ) {
 		String status = this.getInfectionStatus();
 		if( ! ( status.equals( "S" ) || status.equals( "E" ) || status.equals( "VS" ) || status.equals( "VE" )  || status.equals( "VP" )  || status.equals( "R" ) ) ){
-			System.err.println( "Agent.beQuarantined: infection status have to be S, E, VS, VE, VP, or R! The current state is " + status );
+			System.err.println( "Agent.beQuarantined: Check the infection state of the input agent! The current state is " + status );
 		}
 		if( status.equals( "S" ) ) {
 			this.setInfectionStatus( "QS");
@@ -152,9 +160,6 @@ public class Agent {
 			} else if( str.equals("VS") ) {
 				b.setInfectionStatus( "VE" );
 			}
-//			} else if( str.equals("QS") ) {
-//				b.setInfectionStatus( "QE" );
-//			}
 		}
 	}		
 		

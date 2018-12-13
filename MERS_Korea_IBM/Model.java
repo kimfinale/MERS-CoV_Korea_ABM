@@ -95,11 +95,10 @@ public class Model {
 			System.out.println( "i = "  + i );			
 			int numSteps= (int) ( pars.getStopTime() / pars.getReportFreq() );
 //			Parameters pars = new Parameters ();
-			pars.setRandomSeed( i );
-			
-//			System.out.println( "vacc efficacy = " + pars.getVaccEfficacy() );
+			pars.setRandomSeed( 2 );
 
 			double [][] out = runModel( pars );
+			
 			
 			cumCase.addValue( out[numSteps-1][6] );
 			offspringVariance.addValue( out[numSteps-1][7] );
@@ -108,7 +107,7 @@ public class Model {
 			cumulVaccDose.addValue( pars.getCumulVaccDose()  );
 			cumulVaccProtected.addValue( pars.getCumulVaccProtected() );
 			
-//			System.out.println( pars.isDayVaccinationStartAdjusted() );
+			System.out.println( pars.isDayVaccinationStartAdjusted() );
 
 		}
 		double mean = cumCase.getMean();
@@ -127,7 +126,6 @@ public class Model {
 		System.out.println( "hospitalsVisited = " + hospitalsWithInfectious.getMean() + ", sd = " + + hospitalsWithInfectious.getStandardDeviation() );
 		System.out.println( "hospitalsTransmissionOccurred = " + hospitalsTransmissionOccurred.getMean() + ", sd= " + + hospitalsTransmissionOccurred.getStandardDeviation() );
 		System.out.println( "cumulVaccDose = " + cumulVaccDose.getMean() + ", sd = " + + cumulVaccDose.getStandardDeviation() );
-//		System.out.println( "cumulVaccProtected = " + pars.getCumulVaccProtected() );
 		System.out.println( "cumulVaccProtected = " + cumulVaccProtected.getMean() + ", sd = " + + cumulVaccProtected.getStandardDeviation() );
 	
 	}
@@ -138,7 +136,6 @@ public class Model {
 	// runModel()
 	// run the model 
 	public static double [][] runModel( Parameters pars ){
-		renewRandomNumberGenerators( pars );
 		modelSetup( pars );
 		double delta = pars.getStepSize();
 		int nIter = (int) ( pars.getStopTime() / delta );
@@ -196,6 +193,7 @@ public class Model {
 	// populate agents according to the number of initial population size and initially infecteds
 	// assumes that the index case is high-risk, which is the case for 2015 outbreak
 	public static void modelSetup( Parameters pars ){
+		// reset random number generators
 		RNG = new MersenneTwister( pars.getRandomSeed() );
 		unifFromZeroToOne = new UniformRealDistribution( RNG, 0, 1 );
 		gammaIncubationPeriod = 
@@ -239,9 +237,7 @@ public class Model {
 				uninfectedHospitals.add( h );
 			}
 		}
-		// renew random number for the hospital size, which is used to select an index hospital under importation 
 		unifHosp = new UniformIntegerDistribution( RNG, 0, uninfectedHospitals.size() - 1 );
-		
 		String scenario = pars.getOutbreakScenario();
 		
 		if( scenario.equalsIgnoreCase("2015") ) { // Pyeongtaek St. Mary's hospital, index case being high-risk, successful transmission 4-6 days after symptom onset
@@ -494,6 +490,19 @@ public class Model {
 	// renew the random number generators such that we get the same result in case we don't change the random seed in R (via rJava) and Java
 	//
 	public static void renewRandomNumberGenerators( Parameters pars ){
+		RNG = new MersenneTwister( pars.getRandomSeed() );
+		unifFromZeroToOne = new UniformRealDistribution( RNG, 0, 1 );
+		gammaIncubationPeriod = 
+				new GammaDistribution( RNG, pars.getShapeGammaDurationOfIncubation(), 1/pars.getRateGammaDurationOfIncubation() );
+		gammaDurationOfInfectiousness = 
+				new GammaDistribution( RNG, pars.getShapeGammaDurationOfInfectiousness(), 1/pars.getRateGammaDurationOfInfectiousness() );
+		gammaDelayVaccineInducedImmunity = 
+				new GammaDistribution( RNG, pars.getShapeGammaDurationOfIncubation(), pars.getMeanDelayVaccineInducedImmunity() / pars.getShapeGammaDurationOfIncubation() );
+		unifHosp = new UniformIntegerDistribution( RNG, 0, hospPopAtRisk.size() - 1 );
+		uniformDelay = 
+				new UniformIntegerDistribution( RNG, pars.getMinDelaySymptomOnsetToTransmission2015(), pars.getMaxDelaySymptomOnsetToTransmission2015() );
+		unifFromZeroToOneVacc = new UniformRealDistribution( RNG, 0, 1 );
+		
 	}
 
 	
@@ -505,16 +514,33 @@ public class Model {
 		if( str.equals( "S" ) ) {
 			for( Hospital h : list ) {
 				num += h.getSusceptibles().size();
+			}
+		} 
+		else if( str.equals( "VS" ) ) {
+			for( Hospital h : list ) {
 				num += h.getVaccinatedSusceptibles().size();
+			}
+		}
+		else if( str.equals( "QS" ) ) {
+			for( Hospital h : list ) {
 				num += h.getQuarantinedSusceptibles().size();
 			}
-		} else if( str.equals( "E" ) ) {
+		}
+		else if( str.equals( "E" ) ) {
 			for( Hospital h : list ) {
 				num += h.getExposeds().size();
+			}
+		}
+		else if( str.equals( "VE" ) ) {
+			for( Hospital h : list ) {
 				num += h.getVaccinatedExposeds().size();
+			}
+		}else if( str.equals( "QE" ) ) {
+			for( Hospital h : list ) {
 				num += h.getQuarantinedExposeds().size();
 			}
-		} else if( str.equals( "I" ) ) {
+		}
+		else if( str.equals( "I" ) ) {
 			for( Hospital h : list ) {
 				num += h.getInfectious().size();
 			}
@@ -531,6 +557,11 @@ public class Model {
 		else if( str.equals( "VP" ) ) {
 			for( Hospital h : list ) {
 				num += h.getVaccinatedProtecteds().size();
+			}
+		}
+		else if( str.equals( "QVP" ) ) {
+			for( Hospital h : list ) {
+				num += h.getQuarantinedVaccinatedProtecteds().size();
 			}
 		}
 		else if( str.equals( "JR" ) ) {

@@ -14,38 +14,37 @@ import java.util.Scanner;
 
 public class Parameters {
 	private int 				debug = 0;
-	private int                 numSampleRun = 50;
-	private int                 randomSeed = 4;
+	private int                 numSampleRun = 1;
+	private int                 randomSeed = 3;
 	// unit time = day
 	private double              stopTime = 60;
 	private double              stepSize = 	0.2;
 	private double              reportFreq = 1;
+	
+	// parameter to be estimated
+	private double              rateTransmit = 0.30; //  infectious person can transmit infection to a susceptible person with probability of 0.2 
+	private double              dayDelayBeforeMovingToAnotherHospital = 1.2; //
+		
 	private String 				outbreakScenario = "2015";//2015, importation,
-
 	// vaccination related
 	private boolean 			underVaccinationScenario = false;
 	private String 				vaccinationScenario = "Distance";//Distance, Region, or Hospital
+	private double              vaccCoverage = 0.9;
 	private double              vaccEfficacy = 0.3;
 	private double              relativeVaccEfficacyPostExposure = 0.5;
-	private double              vaccCoverage = 0.7;
-	
-	private int               	thresholdNumberCaseForVaccinationInitiation = 5;
+	private int               	thresholdNumberCaseForVaccinationInitiation = 1;
 	private int               	thresholdDayVaccinationInitiation = 14;
 	private boolean             dayVaccinationStartAdjusted = false; //used as a switch to ensure that vaccination start date is adjusted only once (in response to the number of cases detected)
 	private double              vaccinationTargetRadius = 30;//km
-	private double              timeIndexCaseConfirmation = 9.0; // reported time for confirmation of the index case(May 20 after May 11 (onset of symptoms)
-	
-	private boolean 			preEmptiveVaccination = false;
+	private boolean 			preEmptiveVaccination = false; 
 	private boolean             areaTargetedVaccination = false;
 	private boolean 			hospitalTargetedVaccination = false;
 	private int 				numHospitalsForTargetedVaccination = 5;
 	private double              hospitalCoverage = 1.0;
+	private double              timeIndexCaseConfirmation = 9.0; // reported time for confirmation of the index case(May 20 after May 11 (onset of symptoms)
 	
-	// parameter to be estimated
-	private double              rateTransmit = 0.1509069; //  infectious person can transmit infection to a susceptible person with probability of 0.2 
-	private double              dayDelayBeforeMovingToAnotherHospital = 1.3929195; //
 	private double              shapeGammaOffspring = 0.2; // NegBin (Poisson-Gamma) distribution 
-	private double              propSeekingCareFromOtherHospitals = 0.1189189; //0.118; 
+	private double              propSeekingCareFromOtherHospitals = 0.1189189; // 0.1189189; 
 	private double              factorHighRiskTransmissibility = 79.0;
 	
 	// Parameters were estimated from Korean data using coarseDataTools package in R
