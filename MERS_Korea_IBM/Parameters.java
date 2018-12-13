@@ -14,7 +14,7 @@ import java.util.Scanner;
 
 public class Parameters {
 	private int 				debug = 0;
-	private int                 numSampleRun = 1;
+	private int                 numSampleRun = 50;
 	private int                 randomSeed = 3;
 	// unit time = day
 	private double              stopTime = 60;
@@ -27,10 +27,11 @@ public class Parameters {
 		
 	private String 				outbreakScenario = "2015";//2015, importation,
 	// vaccination related
-	private boolean 			underVaccinationScenario = false;
+	private boolean 			underVaccinationScenario = true;
 	private String 				vaccinationScenario = "Distance";//Distance, Region, or Hospital
 	private double              vaccCoverage = 0.9;
-	private double              vaccEfficacy = 0.3;
+	private double              vaccEfficacy = 0.7;
+	private double              meanDelayVaccineInducedImmunity = 5.0;//14 
 	private double              relativeVaccEfficacyPostExposure = 0.5;
 	private int               	thresholdNumberCaseForVaccinationInitiation = 1;
 	private int               	thresholdDayVaccinationInitiation = 14;
@@ -52,7 +53,7 @@ public class Parameters {
 	private double              rateGammaDurationOfIncubation = 0.502;	//
 	private double              shapeGammaDurationOfInfectiousness = 5.7;// 
 	private double              rateGammaDurationOfInfectiousness = 0.5;//
-	private double              meanDelayVaccineInducedImmunity = 14.0;// 
+	
 	private double              meanDurationOfInfectiousness = 10.0;//
 	private double              maxDurationOfInfectiousness = 13;//
 	private double              minDurationOfIncubation = 0;//

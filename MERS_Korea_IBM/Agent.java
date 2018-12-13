@@ -85,8 +85,8 @@ public class Agent {
 	//
 	public void becomeInfectious( Parameters pars ) {
 		String status = this.getInfectionStatus();
-		if( ! ( status.equals( "E" ) || status.equals( "QE" ) || status.equals( "VE" ) ) ){
-			System.err.println( "Agent.becomeInfectious: infection status have to be E, QE, or VE. The current state is " + status );
+		if( ! ( status.equals( "E" ) || status.equals( "QE" ) || status.equals( "VE" ) || status.equals( "QVE" ) ) ){
+			System.err.println( "Agent.becomeInfectious: infection status have to be E, QE, VE, or QVE. The current state is " + status );
 		}
 		pars.setCumulInc( pars.getCumulInc() + 1 ); // increase the cumulative incidence by 1
 		this.setInfectionStatus( "I" ); 

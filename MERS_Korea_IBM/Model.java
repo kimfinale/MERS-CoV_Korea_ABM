@@ -95,10 +95,9 @@ public class Model {
 			System.out.println( "i = "  + i );			
 			int numSteps= (int) ( pars.getStopTime() / pars.getReportFreq() );
 //			Parameters pars = new Parameters ();
-			pars.setRandomSeed( 2 );
+			pars.setRandomSeed( i );
 
 			double [][] out = runModel( pars );
-			
 			
 			cumCase.addValue( out[numSteps-1][6] );
 			offspringVariance.addValue( out[numSteps-1][7] );

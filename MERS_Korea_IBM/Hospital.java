@@ -348,7 +348,6 @@ public class Hospital {
 		}
 		this.getQuarantinedExposeds().addAll( quarantined );
 		this.getExposeds().removeAll( quarantined );
-		
 		quarantined.clear();
 		
 		for( Agent a : this.getSusceptibles() ) {
@@ -359,7 +358,6 @@ public class Hospital {
 		}
 		this.getQuarantinedSusceptibles().addAll( quarantined );
 		this.getSusceptibles().removeAll( quarantined );//removed from infection transmission
-		
 		quarantined.clear();
 		for( Agent a : this.getVaccinatedSusceptibles() ) {
 			if( !a.isQuarantined() && ( Model.unifFromZeroToOne.sample() < rate ) ){
@@ -399,6 +397,7 @@ public class Hospital {
 		}
 		this.getIsolatedRemoveds().addAll( quarantined );
 		this.getRemoveds().removeAll( quarantined ); 
+		
 		if( pars.getDebug() > 0 ) {
 			System.out.printf( "Day: %.1f, Step.quarantine occurred.\n", Step.currentDay );
 			for(Hospital h : Model.hospitals ) {
