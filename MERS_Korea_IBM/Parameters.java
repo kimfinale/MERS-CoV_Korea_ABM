@@ -22,8 +22,8 @@ public class Parameters {
 	private double              reportFreq = 1;
 	
 	// parameter to be estimated
-	private double              rateTransmit = 0.30; //  infectious person can transmit infection to a susceptible person with probability of 0.2 
-	private double              dayDelayBeforeMovingToAnotherHospital = 1.2; //
+	private double              rateTransmit = 0.20; //  infectious person can transmit infection to a susceptible person with probability of 0.2 
+	private double              dayDelayBeforeMovingToAnotherHospital = 1.0; //
 		
 	private String 				outbreakScenario = "2015";//2015, importation,
 	// vaccination related
@@ -31,15 +31,18 @@ public class Parameters {
 	private String 				vaccinationScenario = "Distance";//Distance, Region, or Hospital
 	private double              vaccCoverage = 0.9;
 	private double              vaccEfficacy = 0.7;
-	private double              meanDelayVaccineInducedImmunity = 5.0;//14 
+	//vaccProb* are updated according to vaccEfficacy, vaccCoverage, relativeVaccEfficacyPostExposure, and stepsize
+	private double              vaccProbPerStepForSusc = 0.0;
+	private double              vaccProbPerStepForExp = 0.0;
+	private double              vaccProbPerStep = 0.0;
+	
+	private double              meanDelayVaccineInducedImmunity = 14.0; 
 	private double              relativeVaccEfficacyPostExposure = 0.5;
 	private int               	thresholdNumberCaseForVaccinationInitiation = 1;
 	private int               	thresholdDayVaccinationInitiation = 14;
 	private boolean             dayVaccinationStartAdjusted = false; //used as a switch to ensure that vaccination start date is adjusted only once (in response to the number of cases detected)
 	private double              vaccinationTargetRadius = 30;//km
-	private boolean 			preEmptiveVaccination = false; 
-	private boolean             areaTargetedVaccination = false;
-	private boolean 			hospitalTargetedVaccination = false;
+	
 	private int 				numHospitalsForTargetedVaccination = 5;
 	private double              hospitalCoverage = 1.0;
 	private double              timeIndexCaseConfirmation = 9.0; // reported time for confirmation of the index case(May 20 after May 11 (onset of symptoms)
@@ -547,12 +550,7 @@ public class Parameters {
 	public void setFactorHighRiskTransmissibility( double factorHighRiskTransmissibility) {
 		this.factorHighRiskTransmissibility = factorHighRiskTransmissibility;
 	}
-	public boolean isAreaTargetedVaccination() {
-		return areaTargetedVaccination;
-	}
-	public void setAreaTargetedVaccination(boolean areaTargetedVaccination) {
-		this.areaTargetedVaccination = areaTargetedVaccination;
-	}
+	
 	
 	public double getMeanDelayVaccineInducedImmunity() {
 		return meanDelayVaccineInducedImmunity;
@@ -572,12 +570,7 @@ public class Parameters {
 	public void setVaccTargetRegionID( int[] vaccTargetRegionID) {
 		this.vaccTargetRegionID = vaccTargetRegionID;
 	}
-	public boolean isPreEmptiveVaccination() {
-		return preEmptiveVaccination;
-	}
-	public void setPreEmptiveVaccination(boolean preEmptiveVaccination) {
-		this.preEmptiveVaccination = preEmptiveVaccination;
-	}
+	
 	public String getFilePathHospLongitude() {
 		return filePathHospLongitude;
 	}
@@ -596,12 +589,7 @@ public class Parameters {
 	public void setRadiusHospitalSearch(double radiusHospitalSearch) {
 		this.radiusHospitalSearch = radiusHospitalSearch;
 	}
-	public boolean isHospitalTargetedVaccination() {
-		return hospitalTargetedVaccination;
-	}
-	public void setHospitalTargetedVaccination(boolean hospitalTargetedVaccination) {
-		this.hospitalTargetedVaccination = hospitalTargetedVaccination;
-	}
+	
 	public int getNumHospitalsForTargetedVaccination() {
 		return numHospitalsForTargetedVaccination;
 	}
@@ -641,7 +629,6 @@ public class Parameters {
 	public int getMinDelaySymptomOnsetToTransmission2015() {
 		return minDelaySymptomOnsetToTransmission2015;
 	}
-
 	public void setMinDelaySymptomOnsetToTransmission2015(int minDelaySymptomOnsetToTransmission2015) {
 		this.minDelaySymptomOnsetToTransmission2015 = minDelaySymptomOnsetToTransmission2015;
 	}
@@ -693,7 +680,6 @@ public class Parameters {
 	public void setThresholdDayVaccinationInitiation(int thresholdDayVaccinationInitiation) {
 		this.thresholdDayVaccinationInitiation = thresholdDayVaccinationInitiation;
 	}
-	
 	public int getDebug() {
 		return debug;
 	}
@@ -718,6 +704,25 @@ public class Parameters {
 	public void setTimeIndexCaseConfirmation(double timeIndexCaseConfirmation) {
 		this.timeIndexCaseConfirmation = timeIndexCaseConfirmation;
 	}
+	public double getVaccProbPerStepForSusc() {
+		return vaccProbPerStepForSusc;
+	}
+	public void setVaccProbPerStepForSusc(double vaccProbPerStepForSusc) {
+		this.vaccProbPerStepForSusc = vaccProbPerStepForSusc;
+	}
+	public double getVaccProbPerStepForExp() {
+		return vaccProbPerStepForExp;
+	}
+	public void setVaccProbPerStepForExp(double vaccProbPerStepForExp) {
+		this.vaccProbPerStepForExp = vaccProbPerStepForExp;
+	}
+	public double getVaccProbPerStep() {
+		return vaccProbPerStep;
+	}
+	public void setVaccProbPerStep(double vaccProbPerStep) {
+		this.vaccProbPerStep = vaccProbPerStep;
+	}
+	
 }
 
 
