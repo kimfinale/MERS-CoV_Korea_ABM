@@ -2,6 +2,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.math3.distribution.GammaDistribution;
@@ -16,8 +17,9 @@ public class Hospital {
 	private int                    regionID 	= -999;
 	private double                 dayVaccinationStarted = 0;
 	private boolean                indexHosp = false;
-	private boolean                vaccinationImplemented = false;
-	private boolean                infectorInvaded = false;
+	private boolean                 infectorInvaded = false;
+	private boolean                 vaccinationImplemented = false;
+	
 	
 	// 0=Gangwon, 1=Gyeonggi, 2=Gyeongnam,
 	// 3=Gyeongbuk, 4=Gwangju, 5=Daegu,
@@ -182,7 +184,9 @@ public class Hospital {
 					}
 					totalSusc.removeAll( offspring );
 					a.infect( pars, offspring );
-					transmissionOccurred = true;
+					if( !transmissionOccurred ) {
+						transmissionOccurred = true;
+					}
 				}
 			}
 		}
@@ -208,7 +212,7 @@ public class Hospital {
 		for( Agent a : this.getExposeds() ) {
 			String status = a.getInfectionStatus();
 			if( ! ( status.equals( "E" ) ) ){
-				System.err.println( "Hospital.infectiousnessDevelopment: infection status have to be E. The current status is " + status );
+				System.err.println( "Hospital.becomingInfectious: Infection status have to be E. The current status is " + status );
 			}
 			else if( a.getDurationOfIncubation() <= a.getDaySinceInfection() ) {
 				EToI.add( a );
@@ -222,7 +226,7 @@ public class Hospital {
 		for( Agent a : this.getVaccinatedExposeds() ) {
 			String status = a.getInfectionStatus();
 			if( ! ( status.equals( "VE" ) ) ){
-				System.err.println( "Hospital.infectiousnessDevelopment: infection status have to be VE. The current status is " + status );
+				System.err.println( "Hospital.becomingInfectious: Infection status have to be VE. The current status is " + status );
 			}
 			else if( a.getDurationOfIncubation() <= a.getDaySinceInfection() ) {
 				VEToI.add( a );
@@ -236,7 +240,7 @@ public class Hospital {
 		for( Agent a : this.getQuarantinedExposeds() ) {
 			String status = a.getInfectionStatus();
 			if( ! ( status.equals( "QE" ) ) ){
-				System.err.println( "Hospital.infectiousnessDevelopment: infection status have to be QE. The current status is " + status );
+				System.err.println( "Hospital.becomingInfectious: Infection status have to be QE. The current status is " + status );
 			}
 			else if( a.getDurationOfIncubation() <= a.getDaySinceInfection() ) {
 				QEToJ.add( a );
@@ -251,7 +255,7 @@ public class Hospital {
 		for( Agent a : this.getQuarantinedVaccinatedExposeds() ) {
 			String status = a.getInfectionStatus();
 			if( ! ( status.equals( "QVE" ) ) ){
-				System.err.println( "Hospital.infectiousnessDevelopment: infection status have to be QE. The current status is " + status );
+				System.err.println( "Hospital.becomingInfectious: Infection status have to be QE. The current status is " + status );
 			}
 			else if( a.getDurationOfIncubation() <= a.getDaySinceInfection() ) {
 				QVEToJ.add( a );
@@ -492,8 +496,69 @@ public class Hospital {
 	}
 	
 	
-	
 
+	//////////////////////////////////////////////////////////
+	// lazyVaccination( Parameters pars, double vaccProbPerStepSusc, double vaccProbPerStepExp, double vaccReceivingProbPerStep )
+	// to improve performance vaccination, aging, and becoming VP from VS happen only when infector invades
+	// because otherwise, those processes become irrelvant
+	// This needs to be called from Step.hospitalShopping, which 
+	public void lazyVaccination( Parameters pars, double vaccProbPerStepSusc, double vaccProbPerStepExp, double vaccReceivingProbPerStep ){
+		if( !this.isInfectorInvaded() ) {
+			System.err.println("Hospital.lazyVaccination: this happens only infector invaded is true. Currently " + this.isInfectorInvaded() );
+		}
+		double timeElapsed = Step.currentDay - this.getDayVaccinationStarted();
+		double durVacc = pars.getTimeNeededForVaccination();
+		if( timeElapsed > durVacc ) {
+			timeElapsed = durVacc;
+		}
+		double delta = pars.getStepSize();
+		int nIter = (int) ( pars.getStopTime() / delta );
+		for( int i = 0; i < nIter; ++i ) {
+			ArrayList<Agent> agentVaccinated = new ArrayList<Agent>();
+			ArrayList<Agent> S = this.getSusceptibles();
+			// Ensure that people get vaccinated only once for the correct number of vaccines, i.e., account for those who receive vaccine and don't become immune
+			ArrayList<Agent> vaccReceivedAlready = this.getVaccineReceived() ;
+			S.removeAll( vaccReceivedAlready ); 
+			
+			for( Agent a : S ) {
+				double u = Model.unifFromZeroToOneVacc.sample(); 
+				if( u < vaccProbPerStepSusc ) {
+					a.setDaySinceVaccination( 0.0 );
+					a.gammaDelayVaccineInducedImmunity();
+					a.setInfectionStatus( "VS" ); // efficacy is interpreted as being the fraction to be 
+					agentVaccinated.add( a );
+				}
+				if( u < vaccReceivingProbPerStep ) {
+					vaccReceivedAlready.add( a );
+					pars.setCumulVaccDose( pars.getCumulVaccDose() + 1 );
+				}
+			}
+			this.getVaccinatedSusceptibles().addAll( agentVaccinated );
+			S.removeAll( agentVaccinated );
+			
+			//become immune
+			List<Agent> agentToBecomeImmune = new ArrayList<Agent>();
+			for( Agent a : this.getVaccinatedSusceptibles() ) {
+				if( a.getDelayVaccineInducedImmunity() < a.getDaySinceVaccination() ) {
+					a.setInfectionStatus( "VP" ); // vaccinated and protected
+					pars.setCumulVaccProtected( pars.getCumulVaccProtected() + 1 );
+				}
+			}
+			this.getVaccinatedSusceptibles().removeAll( agentToBecomeImmune );
+			this.getVaccinatedProtecteds().addAll( agentToBecomeImmune );
+			
+			//age
+			for( Agent a : this.getVaccinatedSusceptibles() ) {
+				double daySinceVacc = a.getDaySinceVaccination();
+				if( daySinceVacc > -1 ) {
+					a.setDaySinceVaccination( a.getDaySinceVaccination() + delta );
+				}
+			}
+		}
+	}	
+
+	
+	
 	
 	////////////////////////////////////////////////////////////////////////////////
 	// selectHospital()
@@ -544,64 +609,6 @@ public class Hospital {
 	}
 	
 	
-	
-/*	
-	////////////////////////////////////////////////////////////////////////////////
-	// selectHospital()
-	// select one hospital to move arch hospitals within certain distance
-	//
-	public Hospital selectHospital( Parameters pars ){
-		ArrayList<Hospital> targetHospList = new ArrayList<Hospital>();
-		double distCutoff = pars.getRadiusHospitalSearch();
-		double myPop = this.getPopSize();
-		double myLon = this.getLongitude();
-		double myLat = this.getLatitude();
-		int iter = Model.uninfectedHospitals.size(); 
-		for( int i = 0; i < iter; ++i ) {
-			Hospital h = Model.uninfectedHospitals.get( i );
-			double d = util.getDistance( myLat, h.getLatitude(), myLon, h.getLongitude() ); 
-//			if( d < distCutoff && myPop < h.getPopSize() ) {
-			if( d < distCutoff || ( h.getLevel() == 4 && h.getRegionID() == 8 ) ) {// Level 4 Hospitals in Seoul are always accessible 
-				targetHospList.add( h );
-			}
-		}
-				
-//		for( int k = 0; k < targetHospList.size(); ++k ) {
-//			System.out.println( "time = " + Step.currentDay + ", "
-//		
-//					+ "level = " +  targetHospList.get(k).getLevel() 
-//					+ ", regionID = " +  targetHospList.get(k).getRegionID() 
-//					+ ", pop at risk = " +  targetHospList.get(k).getPopSize() );
-//		}
-		// select hospital in favor of those with larger population (in fact, square of population size)
-		if( targetHospList.size() > 0 ) {// no target hospital then stay where you are			 
-			int N = targetHospList.size();
-			int[] popCumSum = new int[ N ];
-			int popsize = targetHospList.get(0).getPopSize();
-			popCumSum[ 0 ] = popsize * popsize;
-	        for( int i = 1; i < N; i++ ) {
-	        	int popsize1 = targetHospList.get(i).getPopSize();
-	        	popCumSum[ i ] = popCumSum[ i-1  ] +  popsize1 * popsize1;
-	        }
-	            
-	        int index = 0;
-	        double r = Model.unifFromZeroToOne.sample();
-	        for( int i = 0; i < N; i++ ) {       	
-	        	if( r <= ( (double) popCumSum[i] / popCumSum[N-1] ) ) {
-	        		index = i;
-	        		break;
-	        	}
-	        }
-//			
-//	        System.out.println( "time = " + Step.currentDay + ", selected id = " +  targetHospList.get(index).getID() );
-			
-		    return targetHospList.get(index);
-		} else {
-			return null;
-		}
-	}
-	
-*/	
 	
 	
 
@@ -746,8 +753,8 @@ public class Hospital {
 		list.addAll( this.getExposeds() );		
 		list.addAll( this.getInfectious() );
 		list.addAll( this.getIsolateds() );
-//		list.addAll( this.getRemoveds() );
-//		list.addAll( this.getIsolatedRemoveds() );
+		list.addAll( this.getRemoveds() );
+		list.addAll( this.getIsolatedRemoveds() );
 		// exposed to the vaccine
 		list.addAll( this.getVaccinatedSusceptibles() );
 		list.addAll( this.getVaccinatedExposeds() );
@@ -964,16 +971,16 @@ public class Hospital {
 	public void setIndexHosp(boolean indexHosp) {
 		this.indexHosp = indexHosp;
 	}
+	public boolean isInfectorInvaded() {
+		return infectorInvaded;
+	}
+	public void setInfectorInvaded(boolean infectorInvaded) {
+		this.infectorInvaded = infectorInvaded;
+	}
 	public boolean isVaccinationImplemented() {
 		return vaccinationImplemented;
 	}
 	public void setVaccinationImplemented(boolean vaccinationImplemented) {
 		this.vaccinationImplemented = vaccinationImplemented;
-	}
-	public boolean isInfectorInvaded() {
-		return infectorInvaded;
-	}
-	public void setInfectorInvaded(boolean infectiousInvaded) {
-		this.infectorInvaded = infectiousInvaded;
 	}
 }

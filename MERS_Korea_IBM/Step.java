@@ -141,14 +141,14 @@ public class Step {
 	public void stepVaccinate( Parameters pars ){
 		Model.updateHospitalsForVaccination( pars ); // update the list of hospitals 
 		
-		double vaccProbPerStepSusc = pars.getVaccProbPerStepForSusc();
-		double vaccProbPerStepExp = pars.getVaccProbPerStepForExp();
+		double vaccProbPerStepSusc = pars.getVaccProbPerStepSusc();
+		double vaccProbPerStepExp = pars.getVaccProbPerStepExp();
 		double vaccReceivingProbPerStep = pars.getVaccProbPerStep();
 		double durVacc = pars.getTimeNeededForVaccination();
 		
 		for( Hospital h : Model.hospitalsVaccinationImplemented ) {
 			double dayVaccStart = h.getDayVaccinationStarted();
-			if( dayVaccStart <= currentDay && currentDay < (dayVaccStart + durVacc) && h.isVaccinationImplemented()) {
+			if( dayVaccStart <= currentDay && currentDay < (dayVaccStart + durVacc) ) {
 				h.vaccination( pars, vaccProbPerStepSusc, vaccProbPerStepExp, vaccReceivingProbPerStep );
 			}
 			if( pars.getDebug() > 0 )
@@ -212,7 +212,6 @@ public class Step {
 			agentImmune.clear();	
 		}
 
-		
 		if( pars.getDebug() > 0 ) {
 			System.out.printf( "Day: %.1f, Step.stepBecomeImmune occurred.\n", Step.currentDay );
 			for( Hospital h : Model.hospitals ) {
@@ -238,6 +237,7 @@ public class Step {
 				pars.setCumulVaccProtected( pars.getCumulVaccProtected() + 1 );
 			}
 		}
+		
 		return( becomeImmune );
 	}
 	
@@ -306,14 +306,17 @@ public class Step {
 				Hospital h = toHospList.get( j );
 				h.getInfectious().add( a );
 				h.setInfectorInvaded( true );
+				a.setInvader( true );
 			}
 		}
+		
 		for( Hospital h : newHospWithInfectious ) {
-			if( !Model.hospitals.contains( h ) ) { // duplicates or already included ones are not added
+			if( !Model.hospitals.contains( h ) ) {// duplicates or already included ones are not added
 				Model.hospitals.add( h );
 			}
 		}
 		Model.uninfectedHospitals.removeAll( newHospWithInfectious );
+		
 		if( pars.getDebug() > 0 ) {
 			System.out.printf( "Day: %.1f, Step.stepHospitalShopping occurred.\n", Step.currentDay );
 			for(Hospital h : Model.hospitals ) {
@@ -400,7 +403,7 @@ public class Step {
 		}
 		if( pars.getDebug() > 0 ) {
 			System.out.printf( "Day: %.1f, Step.stepIsolate occurred.\n", Step.currentDay );
-			for( Hospital h : Model.hospitals ) {
+			for(Hospital h : Model.hospitals ) {
 				h.printSelf();
 			}
 		}

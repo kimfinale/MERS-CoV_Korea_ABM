@@ -14,7 +14,7 @@ import java.util.Scanner;
 
 public class Parameters {
 	private int 				debug = 0;
-	private int                 numSampleRun = 1;
+	private int                 numSampleRun = 100;
 	private int                 randomSeed = 3;
 	// unit time = day
 	private double              stopTime = 60;
@@ -22,26 +22,28 @@ public class Parameters {
 	private double              reportFreq = 1;
 	
 	// parameter to be estimated
-	private double              rateTransmit = 1.5; //  infectious person can transmit infection to a susceptible person with probability of 0.2 
-	private double              dayDelayBeforeMovingToAnotherHospital = 1.8; //
-		
+	private double              rateTransmit = 0.19; //  infectious person can transmit infection to a susceptible person with probability of 0.2 
+	private double              dayDelayBeforeMovingToAnotherHospital = 1.69; //
+	private double              fracHighInfectivity = 0.11827957; // 22/186 cases, who visited multiple healthcare facilities
+	private double              fracReductionLowInfectivity = 0.01265823; //0.1/7.9; // relative reproduction number who remain in one hospital	
+	
 	private String 				outbreakScenario = "2015";//2015, importation,
 	// vaccination related
-	private boolean 			underVaccinationScenario = false;
+	private boolean 			underVaccinationScenario = true;
 	private String 				vaccinationScenario = "Distance";//Distance, Region, or Hospital
 	private double              vaccCoverage = 0.9;
-	private double              vaccEfficacy = 0.7;
-	//vaccProb* are updated according to vaccEfficacy, vaccCoverage, relativeVaccEfficacyPostExposure, and stepsize
-	private double              vaccProbPerStepForSusc = 0.0;
-	private double              vaccProbPerStepForExp = 0.0;
-	private double              vaccProbPerStep = 0.0;
-	
+	private double              vaccEfficacy = 0.5;
+	private double 				vaccProbPerStepSusc = 0;
+	private double 				vaccProbPerStepExp = 0;
+	private double 				vaccProbPerStep = 0;
+	private double 				timeNeededForVaccination = 10.0;
 	private double              meanDelayVaccineInducedImmunity = 14.0;//14 
 	private double              relativeVaccEfficacyPostExposure = 0.5;
 	private int               	thresholdNumberCaseForVaccinationInitiation = 1;
 	private int               	thresholdDayVaccinationInitiation = 14;
 	private boolean             dayVaccinationStartAdjusted = false; //used as a switch to ensure that vaccination start date is adjusted only once (in response to the number of cases detected)
 	private double              vaccinationTargetRadius = 30;//km
+	
 	private boolean 			preEmptiveVaccination = false; 
 	private boolean             areaTargetedVaccination = false;
 	private boolean 			hospitalTargetedVaccination = false;
@@ -73,8 +75,6 @@ public class Parameters {
 	private int 				cumulVaccDose = 0 ; //cumulative incidence is useful to computer the daily incidence
 	private int 				cumulVaccProtected = 0 ; //cumulative incidence is useful to computer the daily incidence
 	
-	private double              fracHighInfectivity = 0.11827957; // 22/186 cases, who visited multiple healthcare facilities
-	private double              fracReductionLowInfectivity = 0.01265823; //0.1/7.9; // relative reproduction number who remain in one hospital	
 	// 2015 outbreak
 	private int                 firstGenerationOffspring2015 = 18;
 	private int                 minDelaySymptomOnsetToTransmission2015 = 2; // May 11 (symptom onset of the index case), May 15 -  (Pyeongtaek St. Mary's Hospital)
@@ -86,7 +86,7 @@ public class Parameters {
 	
 	private double              fracVaccTargetPopulation = 1.0;
 	
-	private double 				timeNeededForVaccination = 10.0;
+
 
 	private double              dayVaccinationStart = 61.0;
 	private int[]               vaccTargetRegionID = { 0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
@@ -723,20 +723,21 @@ public class Parameters {
 	public void setTimeIndexCaseConfirmation(double timeIndexCaseConfirmation) {
 		this.timeIndexCaseConfirmation = timeIndexCaseConfirmation;
 	}
-	public double getVaccProbPerStepForSusc() {
-		return vaccProbPerStepForSusc;
+
+	public double getVaccProbPerStepSusc() {
+		return vaccProbPerStepSusc;
 	}
 
-	public void setVaccProbPerStepForSusc(double vaccProbPerStepForSusc) {
-		this.vaccProbPerStepForSusc = vaccProbPerStepForSusc;
+	public void setVaccProbPerStepSusc(double vaccProbPerStepSusc) {
+		this.vaccProbPerStepSusc = vaccProbPerStepSusc;
 	}
 
-	public double getVaccProbPerStepForExp() {
-		return vaccProbPerStepForExp;
+	public double getVaccProbPerStepExp() {
+		return vaccProbPerStepExp;
 	}
 
-	public void setVaccProbPerStepForExp(double vaccProbPerStepForExp) {
-		this.vaccProbPerStepForExp = vaccProbPerStepForExp;
+	public void setVaccProbPerStepExp(double vaccProbPerStepExp) {
+		this.vaccProbPerStepExp = vaccProbPerStepExp;
 	}
 
 	public double getVaccProbPerStep() {
@@ -746,7 +747,7 @@ public class Parameters {
 	public void setVaccProbPerStep(double vaccProbPerStep) {
 		this.vaccProbPerStep = vaccProbPerStep;
 	}
-	
+
 }
 
 

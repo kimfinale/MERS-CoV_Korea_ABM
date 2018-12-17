@@ -87,28 +87,37 @@ public class Model {
 		DescriptiveStatistics offspringVariance = new DescriptiveStatistics();
 		DescriptiveStatistics hospitalsWithInfectious = new DescriptiveStatistics();
 		DescriptiveStatistics hospitalsTransmissionOccurred = new DescriptiveStatistics();
+		DescriptiveStatistics hospitalsVaccinationOccurred = new DescriptiveStatistics();
 		DescriptiveStatistics cumulVaccDose = new DescriptiveStatistics();
 		DescriptiveStatistics cumulVaccProtected = new DescriptiveStatistics();
 		
-
-		for( int i = 0; i < pars.getNumSampleRun(); ++i ){
-			System.out.println( "i = "  + i );			
+		int totalRuns = pars.getNumSampleRun();
+		long timeBegin = System.nanoTime();
+		for( int i = 0; i < totalRuns; ++i ){
+			System.out.println( "iter = "  + (i+1) + " of " + totalRuns );			
 			int numSteps= (int) ( pars.getStopTime() / pars.getReportFreq() );
 //			Parameters pars = new Parameters ();
 			pars.setRandomSeed( i );
-
+			
 			double [][] out = runModel( pars );
+			
+			System.out.println( "vacc p = "  +  pars.getVaccProbPerStep() 
+			+ ", vacc p for S = " + pars.getVaccProbPerStepSusc() + ", vacc p for E = " + pars.getVaccProbPerStepExp() );
 			
 			cumCase.addValue( out[numSteps-1][6] );
 			offspringVariance.addValue( out[numSteps-1][7] );
 			hospitalsWithInfectious.addValue( Model.hospitals.size() );
 			hospitalsTransmissionOccurred.addValue( out[numSteps-1][8]  );
+			hospitalsVaccinationOccurred.addValue( hospitalsVaccinationImplemented.size() );
 			cumulVaccDose.addValue( pars.getCumulVaccDose()  );
 			cumulVaccProtected.addValue( pars.getCumulVaccProtected() );
 			
-			System.out.println( pars.isDayVaccinationStartAdjusted() );
+//			System.out.println( pars.isDayVaccinationStartAdjusted() );
 
 		}
+		long timeElapsed = ( System.nanoTime() - timeBegin ) / 1000000000;
+		System.out.println( timeElapsed + " seconds elapsed." );
+
 		double mean = cumCase.getMean();
 		double sd = cumCase.getStandardDeviation();
 		double lower = cumCase.getPercentile( 2.5 );
@@ -124,9 +133,9 @@ public class Model {
 				+ ", med = " + medOffspringVariance  + ", upper = " + upperOffspringVariance );
 		System.out.println( "hospitalsVisited = " + hospitalsWithInfectious.getMean() + ", sd = " + + hospitalsWithInfectious.getStandardDeviation() );
 		System.out.println( "hospitalsTransmissionOccurred = " + hospitalsTransmissionOccurred.getMean() + ", sd= " + + hospitalsTransmissionOccurred.getStandardDeviation() );
+		System.out.println( "hospitalsVaccinationOccurred = " + hospitalsVaccinationOccurred.getMean() + ", sd= " + + hospitalsVaccinationOccurred.getStandardDeviation() );
 		System.out.println( "cumulVaccDose = " + cumulVaccDose.getMean() + ", sd = " + + cumulVaccDose.getStandardDeviation() );
 		System.out.println( "cumulVaccProtected = " + cumulVaccProtected.getMean() + ", sd = " + + cumulVaccProtected.getStandardDeviation() );
-	
 	}
 
 
@@ -217,14 +226,13 @@ public class Model {
 		pars.setDayVaccinationStart( pars.getStopTime() ); // reset to the stop time
 		pars.setCumulVaccDose( 0 );
 		pars.setCumulVaccProtected( 0 );
-		
+		if( pars.isUnderVaccinationScenario() ) {
+			adjustVaccinationProbPerStep( pars );
+		}
 		Agent.nextID = 0;
 		Hospital.nextID = 0;
 		Step.currentDay = 0;
 		pars.setCumulInc( 0 );
-		
-		if( pars.isUnderVaccinationScenario() )
-			adjustVaccinationProbPerStep( pars );
 		
 		// generate hospitals 
 		int numHosp = hospLatitude.size();	
@@ -256,7 +264,7 @@ public class Model {
 			
 			Hospital indexHosp = uninfectedHospitals.get( index  );
 			indexHosp.setIndexHosp( true );//
-			indexHosp.setInfectorInvaded( true );//visited by an infectious person
+			indexHosp.setInfectorInvaded( true );
 			uninfectedHospitals.remove( indexHosp );
 			hospitals.add( indexHosp );	// hospitals where infected peoples exist are separately tracked in the list hospitals
 			hospitalsTransmissionOccurred.add( indexHosp );
@@ -339,31 +347,7 @@ public class Model {
 	}	
 
 	
-	/////////////////////////////////////////////////////////////////////////////////////////
-	// adjustVaccinationProbPerStep( Parameters pars )
-	// adjust vaccination probability per step by taking into account 
-	// vaccination duration, vaccine efficacy, vaccine coverage, reletive efficacy post-exposure, ... 
-	public static void adjustVaccinationProbPerStep( Parameters pars ) {
-		double vaccDur = pars.getTimeNeededForVaccination();
-		double vaccCoverage = pars.getVaccCoverage();
-		double vaccEff = pars.getVaccEfficacy();
-		double relVaccEffPostExp = pars.getRelativeVaccEfficacyPostExposure();
-		
-		double actualVaccCovSusc = vaccCoverage  * vaccEff ; // assuming an all-or-nothing vaccine
-		double actualVaccCovExp = vaccCoverage * vaccEff * relVaccEffPostExp;
-		double numberOfStepsForVaccination = vaccDur / pars.getStepSize();
-		// 1 - (1-vaccProbPerStep)^numberOfStepsForVaccination = actualVaccCov 
-		double vaccProbPerStepSusc = 1 - Math.pow( 1-actualVaccCovSusc, 1/numberOfStepsForVaccination );
-		double vaccProbPerStepExp = 1 - Math.pow( 1-actualVaccCovExp, 1/numberOfStepsForVaccination );
-		// The number of vaccine doses needs to account for those who receive but don't take the vaccine.
-		double vaccReceivingProbPerStep = 1 - Math.pow( (1- (vaccCoverage )), 1/numberOfStepsForVaccination );
-		
-		pars.setVaccProbPerStepForSusc( vaccProbPerStepSusc );
-		pars.setVaccProbPerStepForExp( vaccProbPerStepExp );
-		pars.setVaccProbPerStep( vaccReceivingProbPerStep );
 	
-	}
-
 
 	// These methods are created to return one-dimensional longitude and latitude array separately, 
 	// to make it easier to call and treat in R using rJava
@@ -681,7 +665,31 @@ public class Model {
 		return out ;
 	}
 	
-
+	/////////////////////////////////////////////////////////////////////////////////////////
+	// adjustVaccinationProbPerStep( Parameters pars )
+	// adjust vaccination probability per step by taking into account 
+	// vaccination duration, vaccine efficacy, vaccine coverage, reletive efficacy post-exposure, ... 
+	public static void adjustVaccinationProbPerStep( Parameters pars ) {
+		
+		double vaccDur = pars.getTimeNeededForVaccination();
+		double vaccCoverage = pars.getVaccCoverage();
+		double vaccEff = pars.getVaccEfficacy();
+		double relVaccEffPostExp = pars.getRelativeVaccEfficacyPostExposure();
+		
+		double actualVaccCovSusc = vaccCoverage  * vaccEff ; // assuming an all-or-nothing vaccine
+		double actualVaccCovExp = vaccCoverage * vaccEff * relVaccEffPostExp;
+		double numberOfStepsForVaccination = vaccDur / pars.getStepSize();
+		// 1 - (1-vaccProbPerStep)^numberOfStepsForVaccination = actualVaccCov 
+		double vaccProbPerStepSusc = 1 - Math.pow( 1-actualVaccCovSusc, 1/numberOfStepsForVaccination );
+		double vaccProbPerStepExp = 1 - Math.pow( 1-actualVaccCovExp, 1/numberOfStepsForVaccination );
+		// The number of vaccine doses needs to account for those who receive but don't take the vaccine.
+		double vaccReceivingProbPerStep = 1 - Math.pow( (1- (vaccCoverage )), 1/numberOfStepsForVaccination );
+		
+		pars.setVaccProbPerStepSusc( vaccProbPerStepSusc );
+		pars.setVaccProbPerStepExp( vaccProbPerStepExp );
+		pars.setVaccProbPerStep( vaccReceivingProbPerStep );
+	
+	}
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// updateHospitalsForVaccination
 	// 
@@ -734,6 +742,7 @@ public class Model {
 				}
 			}
 		}
+		
 		if( pars.getDebug() > 4  ) {
 			for( Hospital hosp : hospitalsVaccinationImplemented ) {
 				System.out.printf( "day=%.1f, day vacc started =%.1f, vaccinated hospital ID = %d\n", Step.currentDay, 
@@ -789,8 +798,8 @@ public class Model {
 		hospWithIsolationNoVaccination.removeAll( Model.hospitalsVaccinationImplemented );
 		for( Hospital h : hospWithIsolationNoVaccination ) {
 			hospitalsVaccinationImplemented.add( h );
-			h.setDayVaccinationStarted( Step.currentDay );
 			h.setVaccinationImplemented( true );
+			h.setDayVaccinationStarted( Step.currentDay );
 		}
 //		Seoul Asan 127.109525587	37.5251582003
 //		Samsung Seoul 127.089591626	37.4903457681
@@ -805,41 +814,21 @@ public class Model {
 		for( Hospital h: hospitalsSearched  ) {
 			if( !h.isVaccinationImplemented() ) {
 				double lon = h.getLongitude();
-				if( 127.10952558 < lon && lon < 127.10952559 ) {
+				if( (127.10952558 < lon && lon < 127.10952559) ||  127.08959162 < lon && lon < 127.08959163 ||
+					(126.94082373 < lon && lon < 126.94082374) || ( 127.0003984 < lon && lon < 127.0003985 ) ||
+					(127.00586275 < lon && lon < 127.00586276) ) {
 					h.setDayVaccinationStarted( Step.currentDay );
-					hospitalsVaccinationImplemented.add( h );
 					h.setVaccinationImplemented( true );
-				}
-				if( 127.08959162 < lon && lon < 127.08959163 ) {
-					h.setDayVaccinationStarted( Step.currentDay );
 					hospitalsVaccinationImplemented.add( h );
-					h.setVaccinationImplemented( true );
-				}
-				if( 126.94082373 < lon && lon < 126.94082374 ) {
-					h.setDayVaccinationStarted( Step.currentDay );
-					hospitalsVaccinationImplemented.add( h );
-					h.setVaccinationImplemented( true );
-				}
-				if( 127.0003984 < lon && lon < 127.0003985 ) {
-					h.setDayVaccinationStarted( Step.currentDay );
-					hospitalsVaccinationImplemented.add( h );
-					h.setVaccinationImplemented( true );
-				}
-				if( 127.00586275 < lon && lon < 127.00586276 ) {
-					h.setDayVaccinationStarted( Step.currentDay );
-					hospitalsVaccinationImplemented.add( h );
-					h.setVaccinationImplemented( true );
 				}
 			}
 		}
+		
 		if( pars.getDebug() > 3 ) {
 			for( Hospital h: hospitalsVaccinationImplemented  ) {
 				System.out.printf( "day=%.1f, hospial pop =%d\n", Step.currentDay, h.getPopulationSize() );
 			}
 		}
-//		for( Hospital h: hospitalsVaccinationImplemented  ) {
-//			System.out.printf( "day=%.1f, hospial susc =%d\n", Step.currentDay, h.getSusceptibles().size() );
-//		}
 	}
 	
 	
