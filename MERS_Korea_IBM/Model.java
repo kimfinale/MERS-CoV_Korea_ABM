@@ -1,25 +1,6 @@
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintStream;
-import java.io.Writer;
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Random;
-import java.util.Scanner;
-import java.util.Set;
 
 //import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils.Collections;
 
@@ -51,10 +32,7 @@ public class Model {
 
 	static ArrayList<Hospital> hospitals = new ArrayList<Hospital>();
 	static ArrayList<Hospital> uninfectedHospitals = new ArrayList<Hospital> ();
-	// the above two hospitals give the total hospitals if summed
-	static Set<Hospital> hospitalsTransmissionOccurred = new HashSet<Hospital>();
 	// to help implement vaccination
-	static ArrayList<Hospital> hospitalsCaseIsolated = new ArrayList<Hospital>();
 	static ArrayList<Hospital> hospitalsVaccinationImplemented = new ArrayList<Hospital>();
 
 	static Parameters pars = new Parameters ();
@@ -66,6 +44,8 @@ public class Model {
 	static ArrayList<Double>  	hospPopAtRisk 	= pars.readFileDouble( pars.getFilePathHospSize() );
 	static ArrayList<Double>  	hospLongitude 	= pars.readFileDouble( pars.getFilePathHospLongitude() );
 	static ArrayList<Double>  	hospLatitude 	= pars.readFileDouble( pars.getFilePathHospLatitude() );
+
+	
 	// random number generators
 	static BitsStreamGenerator RNG = new MersenneTwister();
 	static AbstractRealDistribution unifFromZeroToOne = new UniformRealDistribution( RNG, 0, 1 );
@@ -100,15 +80,18 @@ public class Model {
 			pars.setRandomSeed( i );
 			
 			double [][] out = runModel( pars );
-			
-			System.out.println( "vacc p = "  +  pars.getVaccProbPerStep() 
-			+ ", vacc p for S = " + pars.getVaccProbPerStepSusc() + ", vacc p for E = " + pars.getVaccProbPerStepExp() );
+//			System.out.println( "vacc p = "  +  pars.getVaccProbPerStep() 
+//			+ ", vacc p for S = " + pars.getVaccProbPerStepSusc() + ", vacc p for E = " + pars.getVaccProbPerStepExp() );
 			
 			cumCase.addValue( out[numSteps-1][6] );
 			offspringVariance.addValue( out[numSteps-1][7] );
 			hospitalsWithInfectious.addValue( Model.hospitals.size() );
 			hospitalsTransmissionOccurred.addValue( out[numSteps-1][8]  );
+			
+			
+			// make a method to calculate this
 			hospitalsVaccinationOccurred.addValue( hospitalsVaccinationImplemented.size() );
+			
 			cumulVaccDose.addValue( pars.getCumulVaccDose()  );
 			cumulVaccProtected.addValue( pars.getCumulVaccProtected() );
 			
@@ -139,14 +122,30 @@ public class Model {
 	}
 
 
+	
 
+//	public static int calculateHospitalsVaccinationImplemented() {
+//		int n = 0;
+//		for( Hospital h : Model.hospitals ) {
+//			if( h.isVaccinationImplemented() ) {
+//				n++;
+//			}
+//		}
+//		for( Hospital h : Model.uninfectedHospitals ) {
+//			if( h.isVaccinationImplemented() ) {
+//				n++;
+//			}
+//		}
+//		
+//	}
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// runModel()
 	// run the model 
 	public static double [][] runModel( Parameters pars ){
 		modelSetup( pars );
 		double delta = pars.getStepSize();
-		int nIter = (int) ( pars.getStopTime() / delta );
+		int nIter = pars.getTotalIteration();
+		
 		Step step = new Step();
 		int totalStepsReported = (int) ( pars.getStopTime() / pars.getReportFreq() );
 		double [][] out = new double[ totalStepsReported ][ 9 ];// day, s, e, i, j, r, ci, varToMeanRatio, numHospitalVisited 				
@@ -172,6 +171,7 @@ public class Model {
 		for( int i = 0; i < nIter; ++ i ){
 			step.MERSTransmission( pars );
 			Step.currentDay = Step.currentDay + delta;
+			Step.currentIteration ++;
 			if( i > 0 && i % everyNthStep == 0 ){
 				out[ index ][ 1 ] = getNumPeople( hospitals, "S" );
 				out[ index ][ 2 ] = getNumPeople( hospitals, "E" );
@@ -180,9 +180,7 @@ public class Model {
 				out[ index ][ 5 ] = getNumPeople( hospitals, "R" ); // protected by vaccine
 				out[ index ][ 6 ] = pars.getCumulInc();
 				out[ index ][ 7 ] = offspringVarianceToMeanRatio( pars );
-//				out[ index ][ 8 ] = getNumberHospitalInfected( pars );
-//				out[ index ][ 8 ] = new HashSet<Hospital>( hospitalsTransmissionOccurred ).size(); // to remove duplicates
-				out[ index ][ 8 ] = hospitalsTransmissionOccurred.size(); // to remove duplicates
+				out[ index ][ 8 ] = getHospitalTransmissionOccurred().size(); // to remove duplicates
 				index ++;
 				if( pars.getDebug() > 2 )
 					System.out.println( "total pop = " + getTotalPopulationSize() +  ", cumul inc = " + pars.getCumulInc() );
@@ -193,7 +191,17 @@ public class Model {
 	}
 	
 	
-	
+	///////////////////////////////////////////////////////////////
+	//calHospitalTranmissionOccurred() 
+	public static ArrayList<Hospital> getHospitalTransmissionOccurred() {
+		ArrayList<Hospital> list = new ArrayList<Hospital>();
+		for( Hospital h : Model.hospitals ) {
+			if( h.isTransmissionOccurred() ) {
+				list.add( h );
+			}
+		}
+		return( list );
+	}
 	
 	
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -218,12 +226,9 @@ public class Model {
 		// become the initial distribution when running from rJava.
 		hospitals = new ArrayList<Hospital>();
 		uninfectedHospitals = new ArrayList<Hospital> ();
-		hospitalsTransmissionOccurred = new HashSet<Hospital>();
-		hospitalsCaseIsolated = new ArrayList<Hospital>();
 		hospitalsVaccinationImplemented = new ArrayList<Hospital>();
 		// reset variables for vaccination to occur properly
 		pars.setDayVaccinationStartAdjusted( false ); // for the vaccination start date to be adjusted 
-		pars.setDayVaccinationStart( pars.getStopTime() ); // reset to the stop time
 		pars.setCumulVaccDose( 0 );
 		pars.setCumulVaccProtected( 0 );
 		if( pars.isUnderVaccinationScenario() ) {
@@ -232,11 +237,13 @@ public class Model {
 		Agent.nextID = 0;
 		Hospital.nextID = 0;
 		Step.currentDay = 0;
+		Step.currentIteration = 1;
 		pars.setCumulInc( 0 );
+		pars.setTotalIteration( (int) ( pars.getStopTime() / pars.getStepSize() ) );
 		
 		// generate hospitals 
 		int numHosp = hospLatitude.size();	
-		for( int i = 0; i < numHosp; ++ i ) {
+			for( int i = 0; i < numHosp; ++ i ) {
 			if( hospLevel.get( i ) > pars.getCutoffHospitalLevel() ) {
 				int pop = (int) ((double) hospPopAtRisk.get(i) );
 				Hospital h = new Hospital( pop );
@@ -267,7 +274,7 @@ public class Model {
 			indexHosp.setInfectorInvaded( true );
 			uninfectedHospitals.remove( indexHosp );
 			hospitals.add( indexHosp );	// hospitals where infected peoples exist are separately tracked in the list hospitals
-			hospitalsTransmissionOccurred.add( indexHosp );
+			indexHosp.setTransmissionOccurred( true );
 			
 			int offspringSize = pars.getFirstGenerationOffspring2015();
 			
@@ -283,6 +290,7 @@ public class Model {
 			indexCase.setGeneration( 0 );
 			susc.remove( indexCase );
 			pars.setCumulInc( 1 );
+			Parameters.cumulIncTemp = Parameters.cumulIncTemp + 1; 
 			
 			ArrayList<Agent> newlyExposed = new ArrayList<Agent>();
 			
@@ -303,6 +311,9 @@ public class Model {
 			susc.removeAll( newlyExposed );
 			indexHosp.getExposeds().addAll( newlyExposed );
 		}
+		
+		
+		
 		else if( scenario.equalsIgnoreCase( "Importation") ) {
 			// should I include all hospitals instead of Level 3 or 4 hospitals?
 			Hospital indexHosp = uninfectedHospitals.get( unifHosp.sample() ); // the index case appears in a random hospital
@@ -347,7 +358,27 @@ public class Model {
 	}	
 
 	
-	
+
+	//////////////////////////////////////////////////////////
+	// adjustVaccineDoseUsed
+	// to improve performance vaccination, aging, and becoming VP from VS happen only when infector invades
+	// because otherwise, those processes become irrelevant
+	// This needs to be called from Step.hospitalShopping, which determines which hospitals are invaded
+	public static void adjustVaccineDoseUsed( Parameters pars ){
+		double vaccDur = pars.getDayNeededForVaccination();
+		double p = pars.getVaccProbPerStep();
+		for( Hospital h : Model.hospitalsVaccinationImplemented ) {
+			if( !h.isInfectorInvaded() ) {
+				double timeElapsed  = Step.currentDay - h.getDayVaccinationStarted();
+				if( timeElapsed > vaccDur ) { 
+					timeElapsed = vaccDur;
+				}
+				int stepIter = (int) ( timeElapsed / pars.getStepSize() );
+				pars.setCumulVaccDose( pars.getCumulVaccDose() + (int)( ( 1 - Math.pow( 1-p, stepIter ) ) * h.getSusceptibles().size() ) );
+			}
+		}
+	}	
+
 
 	// These methods are created to return one-dimensional longitude and latitude array separately, 
 	// to make it easier to call and treat in R using rJava
@@ -355,10 +386,11 @@ public class Model {
 	// getAffectedHospitalCoordinateArray()
 	// retrieve the array of longitude of the hospitals where transmission took place
 	public static double [] getAffectedHospitalLongitudeArray(){
-		int n = hospitalsTransmissionOccurred.size();
+		ArrayList<Hospital> list = getHospitalTransmissionOccurred();
+		int n = list.size();
 		double[] lonArray = new double[ n ];
 		int index = 0;
-		for( Hospital h : hospitalsTransmissionOccurred ){
+		for( Hospital h : list ){
 			lonArray[ index ] = h.getLongitude();
 			index ++;
 		}
@@ -370,10 +402,11 @@ public class Model {
 	// getAffectedHospitalLatitudeArray()
 	// retrieve the array of latitude of the hospitals where transmission took place
 	public static double [] getAffectedHospitalLatitudeArray(){
-		int n = hospitalsTransmissionOccurred.size();
+		ArrayList<Hospital> list = getHospitalTransmissionOccurred();
+		int n = list.size();
 		double[] latArray = new double[ n ];
 		int index = 0;
-		for( Hospital h : hospitalsTransmissionOccurred ){
+		for( Hospital h : list ){
 			latArray[ index ] = h.getLatitude();
 			index ++;
 		}
@@ -385,10 +418,11 @@ public class Model {
 	// getAffectedHospitalArray()
 	// retrieve the array of IDs of the hospitals where transmission took place
 	public static int [] getAffectedHospitalIDArray(){
-		int n = hospitalsTransmissionOccurred.size();
+		ArrayList<Hospital> list = getHospitalTransmissionOccurred();
+		int n = list.size();
 		int[] IDArray = new int[ n ];
 		int index = 0;
-		for( Hospital h : hospitalsTransmissionOccurred ){
+		for( Hospital h : list ){
 			IDArray[ index ] = h.getID();
 		}
 		return IDArray;
@@ -551,6 +585,11 @@ public class Model {
 				num += h.getQuarantinedExposeds().size();
 			}
 		}
+		else if( str.equals( "QVE" ) ) {
+			for( Hospital h : list ) {
+				num += h.getQuarantinedVaccinatedExposeds().size();
+			}
+		}
 		else if( str.equals( "I" ) ) {
 			for( Hospital h : list ) {
 				num += h.getInfectious().size();
@@ -671,7 +710,7 @@ public class Model {
 	// vaccination duration, vaccine efficacy, vaccine coverage, reletive efficacy post-exposure, ... 
 	public static void adjustVaccinationProbPerStep( Parameters pars ) {
 		
-		double vaccDur = pars.getTimeNeededForVaccination();
+		double vaccDur = pars.getDayNeededForVaccination();
 		double vaccCoverage = pars.getVaccCoverage();
 		double vaccEff = pars.getVaccEfficacy();
 		double relVaccEffPostExp = pars.getRelativeVaccEfficacyPostExposure();
@@ -713,25 +752,26 @@ public class Model {
 	//
 	public static void updateHospitalsForVaccinationByDistance( Parameters pars ){
 		// hospitals where isolation occurred but vaccination didn't start
-		ArrayList<Hospital> hospWithIsolationNoVaccination = new ArrayList<Hospital> ();
-		hospWithIsolationNoVaccination.addAll( Model.hospitalsCaseIsolated );
-		hospWithIsolationNoVaccination.removeAll( Model.hospitalsVaccinationImplemented );
-		for( Hospital h : hospWithIsolationNoVaccination ) {
-			hospitalsVaccinationImplemented.add( h );
-			h.setDayVaccinationStarted( Step.currentDay );
-			h.setVaccinationImplemented( true );
+		ArrayList<Hospital> hospitalNewlyCaseIsolated = new ArrayList<Hospital> ();
+		for( Hospital h : Model.hospitals ) {
+			if( h.isIsolationStarted() && !h.isVaccinationImplemented() ) {
+				hospitalNewlyCaseIsolated.add( h );
+				h.setDayVaccinationStarted( Step.currentDay );
+				h.setVaccinationImplemented( true );
+				hospitalsVaccinationImplemented.add( h );
+			}
 		}
 		// decide target pool
 		//vaccines are given to new hospitals when cases are  this is updated in the isolate() method in the Step class
 		double distCutoff = pars.getVaccinationTargetRadius();
-		ArrayList<Hospital> hospitalsSearched = new ArrayList<Hospital>();
-		hospitalsSearched.addAll( Model.hospitals );
-		hospitalsSearched.addAll( Model.uninfectedHospitals );
-		hospitalsSearched.removeAll( Model.hospitalsVaccinationImplemented );
-		for( Hospital hosp : hospWithIsolationNoVaccination ) { // target hospitals are within a certain distance from the hospital where cases are isolated
+		ArrayList<Hospital> hospitalPool = new ArrayList<Hospital>();
+		hospitalPool.addAll( Model.hospitals );
+		hospitalPool.addAll( Model.uninfectedHospitals );
+		hospitalPool.removeAll( Model.hospitalsVaccinationImplemented );
+		for( Hospital hosp : hospitalNewlyCaseIsolated ) { // target hospitals are within a certain distance from the hospital where cases are isolated
 			double myLon = hosp.getLongitude();
 			double myLat = hosp.getLatitude();
-			for( Hospital h : hospitalsSearched ) {
+			for( Hospital h : hospitalPool ) {
 				if( !h.isVaccinationImplemented() ) {
 					double d = util.getDistance( myLat, h.getLatitude(), myLon, h.getLongitude() ); 
 					if( d < distCutoff ) {
@@ -742,7 +782,7 @@ public class Model {
 				}
 			}
 		}
-		
+
 		if( pars.getDebug() > 4  ) {
 			for( Hospital hosp : hospitalsVaccinationImplemented ) {
 				System.out.printf( "day=%.1f, day vacc started =%.1f, vaccinated hospital ID = %d\n", Step.currentDay, 
@@ -758,22 +798,23 @@ public class Model {
 	//
 	public static void updateHospitalsForVaccinationByRegion( Parameters pars ){
 		// hospitals where isolation occurred but vaccination didn't start
-		ArrayList<Hospital> hospWithIsolationNoVaccination = new ArrayList<Hospital> ();
-		hospWithIsolationNoVaccination.addAll( Model.hospitalsCaseIsolated );
-		hospWithIsolationNoVaccination.removeAll( Model.hospitalsVaccinationImplemented );
-		for( Hospital h : hospWithIsolationNoVaccination ) {
-			hospitalsVaccinationImplemented.add( h );
-			h.setDayVaccinationStarted( Step.currentDay );
-			h.setVaccinationImplemented( true );
+		ArrayList<Hospital> hospitalNewlyCaseIsolated = new ArrayList<Hospital> ();
+		for( Hospital h : Model.hospitals ) {
+			if( h.isIsolationStarted() && !h.isVaccinationImplemented() ) {
+				hospitalNewlyCaseIsolated.add( h );
+				h.setDayVaccinationStarted( Step.currentDay );
+				h.setVaccinationImplemented( true );
+				hospitalsVaccinationImplemented.add( h );
+			}
 		}
 		// decide target pool
 		//vaccines are given to new hospitals when cases are  this is updated in the isolate() method in the Step class
-		ArrayList<Hospital> hospitalsSearched = new ArrayList<Hospital>();
-		hospitalsSearched.addAll( Model.hospitals );
-		hospitalsSearched.addAll( Model.uninfectedHospitals );
-		hospitalsSearched.removeAll( Model.hospitalsVaccinationImplemented );
-		for( Hospital hosp : hospWithIsolationNoVaccination ) { // target hospitals are within a certain distance from the hospital where cases are isolated
-			for( Hospital h : hospitalsSearched ) {
+		ArrayList<Hospital> hospitalPool = new ArrayList<Hospital>();
+		hospitalPool.addAll( Model.hospitals );
+		hospitalPool.addAll( Model.uninfectedHospitals );
+		hospitalPool.removeAll( Model.hospitalsVaccinationImplemented );
+		for( Hospital hosp : hospitalNewlyCaseIsolated ) { // target hospitals are within a certain distance from the hospital where cases are isolated
+			for( Hospital h : hospitalPool ) {
 				if( !h.isVaccinationImplemented() ) {
 					if( hosp.getRegionID() == h.getRegionID() || h.getRegionID() == 8 ) { //same region or Seoul
 						hospitalsVaccinationImplemented.add( h );
@@ -793,25 +834,24 @@ public class Model {
 	//
 	public static void updateHospitalsForVaccinationByHospital( Parameters pars ){
 		// hospitals where isolation occurred but vaccination didn't start
-		ArrayList<Hospital> hospWithIsolationNoVaccination = new ArrayList<Hospital> ();
-		hospWithIsolationNoVaccination.addAll( Model.hospitalsCaseIsolated );
-		hospWithIsolationNoVaccination.removeAll( Model.hospitalsVaccinationImplemented );
-		for( Hospital h : hospWithIsolationNoVaccination ) {
-			hospitalsVaccinationImplemented.add( h );
-			h.setVaccinationImplemented( true );
-			h.setDayVaccinationStarted( Step.currentDay );
+		for( Hospital h : Model.hospitals ) {
+			if( h.isIsolationStarted() && !h.isVaccinationImplemented() ) {
+				h.setDayVaccinationStarted( Step.currentDay );
+				h.setVaccinationImplemented( true );
+				hospitalsVaccinationImplemented.add( h );
+			}
 		}
 //		Seoul Asan 127.109525587	37.5251582003
 //		Samsung Seoul 127.089591626	37.4903457681
 //		Yonsei Severance 126.940823731	37.5614071269
 //		Seoul National University Hospital 127.00039849	37.5779137772
 //		Catholic University Seoul St. Mary's Hospital 127.005862753	37.5023918137
-		ArrayList<Hospital> hospitalsSearched = new ArrayList<Hospital>();
-		hospitalsSearched.addAll( Model.hospitals );
-		hospitalsSearched.addAll( Model.uninfectedHospitals );
-		hospitalsSearched.removeAll( Model.hospitalsVaccinationImplemented );
+		ArrayList<Hospital> hospitalPool = new ArrayList<Hospital>();
+		hospitalPool.addAll( Model.hospitals );
+		hospitalPool.addAll( Model.uninfectedHospitals );
+		hospitalPool.removeAll( Model.hospitalsVaccinationImplemented );
 		
-		for( Hospital h: hospitalsSearched  ) {
+		for( Hospital h: hospitalPool ) {
 			if( !h.isVaccinationImplemented() ) {
 				double lon = h.getLongitude();
 				if( (127.10952558 < lon && lon < 127.10952559) ||  127.08959162 < lon && lon < 127.08959163 ||

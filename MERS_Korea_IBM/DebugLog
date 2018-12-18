@@ -1,0 +1,39 @@
+VE=0.1
+19 seconds elapsed.
+cumul case mean = 197.07999999999998, sd = 182.66271359742663, lower = 21.275, med = 140.0, upper = 678.45
+offspring var mean = 36.197380647855695, sd = 20.13504800781139, lower = 9.29129942009483, med = 39.04482522209872, upper = 74.94225238232136
+hospitalsVisited = 12.46, sd = 12.054654448699518
+hospitalsTransmissionOccurred = 10.120000000000001, sd= 9.688284530444857
+hospitalsVaccinationOccurred = 130.86, sd= 61.42159761078529
+cumulVaccDose = 165022.14, sd = 77251.81033741908
+cumulVaccProtected = 2341.98, sd = 1789.013529226401
+
+VE=0.7
+17 seconds elapsed.
+cumul case mean = 106.74, sd = 90.6207188995847, lower = 17.55, med = 69.0, upper = 341.95000000000005
+offspring var mean = 34.6295423072872, sd = 23.00932036633976, lower = 11.418703296703306, med = 24.282353966216014, upper = 100.71676028598509
+hospitalsVisited = 9.54, sd = 8.804474743572388
+hospitalsTransmissionOccurred = 8.08, sd= 7.466496596702596
+hospitalsVaccinationOccurred = 116.4, sd= 65.87124113118914
+cumulVaccDose = 146532.98, sd = 84373.85074929851
+cumulVaccProtected = 18443.58, sd = 15875.565225470345
+
+VE=0.5
+18 seconds elapsed.
+cumul case mean = 137.57999999999998, sd = 135.07837331999346, lower = 18.0, med = 94.0, upper = 531.9250000000001
+offspring var mean = 35.12484380603748, sd = 23.08374306850412, lower = 11.03135775862071, med = 27.51669788528594, upper = 93.90778662615841
+hospitalsVisited = 10.739999999999998, sd = 10.431134714333405
+hospitalsTransmissionOccurred = 9.16, sd= 8.876384628982267
+hospitalsVaccinationOccurred = 121.0, sd= 66.5312570395698
+cumulVaccDose = 153391.81999999998, sd = 82268.68805464351
+cumulVaccProtected = 12649.16, sd = 10491.681574447055
+
+VE=0.3
+30 seconds elapsed.
+cumul case mean = 157.86, sd = 180.76786444588686, lower = 19.1, med = 87.5, upper = 880.8500000000004
+offspring var mean = 32.91094490110028, sd = 21.220682855241368, lower = 10.24299698077229, med = 25.011671896974388, upper = 81.46589307722503
+hospitalsVisited = 11.04, sd = 12.308881810650849
+hospitalsTransmissionOccurred = 9.2, sd= 10.301575072754252
+hospitalsVaccinationOccurred = 113.06, sd= 70.08723718571397
+cumulVaccDose = 140901.6, sd = 89715.54050419126
+cumulVaccProtected = 6540.58, sd = 6182.441760835475

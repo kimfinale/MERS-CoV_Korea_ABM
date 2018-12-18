@@ -14,11 +14,13 @@ import java.util.Scanner;
 
 public class Parameters {
 	private int 				debug = 0;
-	private int                 numSampleRun = 100;
+	private int                 numSampleRun = 50;
 	private int                 randomSeed = 3;
 	// unit time = day
 	private double              stopTime = 60;
 	private double              stepSize = 	0.2;
+	private int              	totalIteration = 1; // eventually, becomes stopTime/stepSize
+	
 	private double              reportFreq = 1;
 	
 	// parameter to be estimated
@@ -36,8 +38,9 @@ public class Parameters {
 	private double 				vaccProbPerStepSusc = 0;
 	private double 				vaccProbPerStepExp = 0;
 	private double 				vaccProbPerStep = 0;
-	private double 				timeNeededForVaccination = 10.0;
-	private double              meanDelayVaccineInducedImmunity = 14.0;//14 
+	private double 				dayNeededForVaccination = 2.0;
+	private double              dayVaccinationStart = 61.0;
+	private double              meanDelayVaccineInducedImmunity = 2.0;//14 
 	private double              relativeVaccEfficacyPostExposure = 0.5;
 	private int               	thresholdNumberCaseForVaccinationInitiation = 1;
 	private int               	thresholdDayVaccinationInitiation = 14;
@@ -72,6 +75,7 @@ public class Parameters {
 	private int                 numInitIsolated = 0; // number of people isolated
 	
 	private int 				cumulInc = 0 ; //cumulative incidence is useful to computer the daily incidence 
+	static int 			        cumulIncTemp = 0 ; //cumulative incidence is useful to computer the daily incidence
 	private int 				cumulVaccDose = 0 ; //cumulative incidence is useful to computer the daily incidence
 	private int 				cumulVaccProtected = 0 ; //cumulative incidence is useful to computer the daily incidence
 	
@@ -88,7 +92,7 @@ public class Parameters {
 	
 
 
-	private double              dayVaccinationStart = 61.0;
+	
 	private int[]               vaccTargetRegionID = { 0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
 	// 0=Gangwon, 1=Gyeonggi, 2=Gyeongnam,
 	// 3=Gyeongbuk, 4=Gwangju, 5=Daegu,
@@ -380,11 +384,11 @@ public class Parameters {
 	public double getTimeImmunityDevelopment(){
 		return timeImmunityDevelopment;
 	}
-	public double getTimeNeededForVaccination() {
-		return timeNeededForVaccination;
+	public double getDayNeededForVaccination() {
+		return dayNeededForVaccination;
 	}
-	public void setTimeNeededForVaccination( double timeNeededForVaccination) {
-		this.timeNeededForVaccination = timeNeededForVaccination;
+	public void setDayNeededForVaccination( double dayNeededForVaccination) {
+		this.dayNeededForVaccination = dayNeededForVaccination;
 	}
 	public double getVaccCoverage() {
 		return vaccCoverage;
@@ -746,6 +750,13 @@ public class Parameters {
 
 	public void setVaccProbPerStep(double vaccProbPerStep) {
 		this.vaccProbPerStep = vaccProbPerStep;
+	}
+	public int getTotalIteration() {
+		return totalIteration;
+	}
+
+	public void setTotalIteration(int totalIteration) {
+		this.totalIteration = totalIteration;
 	}
 
 }

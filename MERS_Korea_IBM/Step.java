@@ -8,7 +8,8 @@ import java.util.*;
 
 public class Step {
 	// class variables
-	static double currentDay = 0.0;
+	static double 	currentDay = 0.0;
+	static int 		currentIteration = 0;
 
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// constructors
@@ -29,12 +30,16 @@ public class Step {
 		stepAge( pars );
 		double timeVaccStart = pars.getDayVaccinationStart();
 		if( pars.isUnderVaccinationScenario() && timeVaccStart <= currentDay && 0.001 < pars.getVaccCoverage() ) {
+			Model.updateHospitalsForVaccination( pars ); 
 			stepVaccinate( pars );
 		}
 		stepBecomeImmune( pars );
-		// do other stuff
+
 		if( pars.isUnderVaccinationScenario() && !pars.isDayVaccinationStartAdjusted()) {
 			adjustVaccinationStartDateByCumulativeIncidence( pars );
+		}
+		if( pars.isUnderVaccinationScenario() && pars.getTotalIteration() == Step.currentIteration + 1  ) { //at the final iteration
+			Model.adjustVaccineDoseUsed( pars );
 		}
 		if( pars.getOutbreakScenario().equalsIgnoreCase("2015")  ) {
 			adjustIndexHospIndexCase( pars );
@@ -49,18 +54,20 @@ public class Step {
 	// stepTransmit( Parameters pars )
 	// susceptibles become infected at each hospital where infectious persons exist.
 	public void stepTransmit( Parameters pars ){
+		
 		double beta = pars.getRateTransmit() * pars.getStepSize();
 		double shape = pars.getShapeGammaOffspring();
 		ArrayList<Hospital> targetHospitals = Model.hospitals;
-//		targetHospitals.removeAll( Model.hospitalsCaseIsolated );  // transmissions do not occur once cases are isolated
+
 		for( Hospital hosp : targetHospitals ) {
 			if( hosp.getInfectious().size() > 0 ) {
 				hosp.transmission( pars, beta, shape );
 			}
 		}
+		
 		if( pars.getDebug() > 0 ) {
 			System.out.printf( "Day: %.1f, Step.stepTransmit occurred.\n", Step.currentDay );
-			for(Hospital h : Model.hospitals ) {
+			for( Hospital h : Model.hospitals ) {
 				h.printSelf();
 			}
 		}
@@ -112,9 +119,7 @@ public class Step {
 				observedTimeToIndexCase < currentDay + pars.getStepSize() ) {
 			for( Hospital h : Model.hospitals ) {
 				if( h.isIndexHosp()) {
-					if( ! Model.hospitalsCaseIsolated.contains( h ) ) {
-						Model.hospitalsCaseIsolated.add( h );
-					}
+					h.setIsolationStarted( true );
 					ArrayList<Agent> list = new ArrayList<Agent>();
 					for( Agent a : h.getRemoveds() ) {
 						if( a.isIndexCase() ) {
@@ -139,21 +144,22 @@ public class Step {
 	// vaccinate( Parameters pars )
 	// vaccinate on a hospital basis
 	public void stepVaccinate( Parameters pars ){
-		Model.updateHospitalsForVaccination( pars ); // update the list of hospitals 
+//		Model.updateHospitalsForVaccination( pars ); // update the list of hospitals 
 		
 		double vaccProbPerStepSusc = pars.getVaccProbPerStepSusc();
 		double vaccProbPerStepExp = pars.getVaccProbPerStepExp();
 		double vaccReceivingProbPerStep = pars.getVaccProbPerStep();
-		double durVacc = pars.getTimeNeededForVaccination();
-		
+		double durVacc = pars.getDayNeededForVaccination();
+
 		for( Hospital h : Model.hospitalsVaccinationImplemented ) {
-			double dayVaccStart = h.getDayVaccinationStarted();
-			if( dayVaccStart <= currentDay && currentDay < (dayVaccStart + durVacc) ) {
-				h.vaccination( pars, vaccProbPerStepSusc, vaccProbPerStepExp, vaccReceivingProbPerStep );
+			if( h.isInfectorInvaded() ) {
+				double dayVaccStart = h.getDayVaccinationStarted();
+				if( dayVaccStart <= currentDay && currentDay < (dayVaccStart + durVacc) ) {
+					h.vaccination( pars, vaccProbPerStepSusc, vaccProbPerStepExp, vaccReceivingProbPerStep );
+				}
 			}
-			if( pars.getDebug() > 0 )
-				System.out.printf( "tick = %.1f, hospital id = %d, vaccination done.\n", Step.currentDay, h.getID() );
 		}
+		
 		if( pars.getDebug() > 0 ) {
 			System.out.printf( "Day: %.1f, Step.stepVaccinate occurred.\n", Step.currentDay );
 			for(Hospital h : Model.hospitals ) {
@@ -169,47 +175,28 @@ public class Step {
 	public void stepBecomeImmune( Parameters pars ){
 		ArrayList<Agent> agentImmune = new ArrayList<Agent>();
 			
-		for( Hospital hosp : Model.hospitals ) {
-			agentImmune = becomeImmuneAfterVaccination( hosp.getVaccinatedSusceptibles(), pars );
-			hosp.getVaccinatedSusceptibles().removeAll( agentImmune );
-			hosp.getVaccinatedProtecteds().addAll( agentImmune );
-			agentImmune.clear();	
-
-			agentImmune = becomeImmuneAfterVaccination( hosp.getVaccinatedExposeds(), pars );
-			hosp.getVaccinatedExposeds().removeAll( agentImmune );
-			hosp.getVaccinatedProtecteds().addAll( agentImmune );
-			agentImmune.clear();
-			
-			agentImmune = becomeImmuneAfterVaccination( hosp.getQuarantinedVaccinatedSusceptibles(), pars );
-			hosp.getQuarantinedVaccinatedSusceptibles().removeAll( agentImmune );
-			hosp.getQuarantinedVaccinatedProtecteds().addAll( agentImmune );
-			agentImmune.clear();	
-
-			agentImmune = becomeImmuneAfterVaccination( hosp.getQuarantinedVaccinatedExposeds(), pars );
-			hosp.getQuarantinedVaccinatedExposeds().removeAll( agentImmune );
-			hosp.getQuarantinedVaccinatedProtecteds().addAll( agentImmune );
-			agentImmune.clear();	
-		}
-		for( Hospital hosp : Model.uninfectedHospitals ) {
-			agentImmune = becomeImmuneAfterVaccination( hosp.getVaccinatedSusceptibles(), pars );
-			hosp.getVaccinatedSusceptibles().removeAll( agentImmune );
-			hosp.getVaccinatedProtecteds().addAll( agentImmune );
-			agentImmune.clear();	
-
-			agentImmune = becomeImmuneAfterVaccination( hosp.getVaccinatedExposeds(), pars );
-			hosp.getVaccinatedExposeds().removeAll( agentImmune );
-			hosp.getVaccinatedProtecteds().addAll( agentImmune );
-			agentImmune.clear();
-			
-			agentImmune = becomeImmuneAfterVaccination( hosp.getQuarantinedVaccinatedSusceptibles(), pars );
-			hosp.getQuarantinedVaccinatedSusceptibles().removeAll( agentImmune );
-			hosp.getQuarantinedVaccinatedProtecteds().addAll( agentImmune );
-			agentImmune.clear();	
-
-			agentImmune = becomeImmuneAfterVaccination( hosp.getQuarantinedVaccinatedExposeds(), pars );
-			hosp.getQuarantinedVaccinatedExposeds().removeAll( agentImmune );
-			hosp.getQuarantinedVaccinatedProtecteds().addAll( agentImmune );
-			agentImmune.clear();	
+		for( Hospital hosp : Model.hospitalsVaccinationImplemented ) {
+			if( hosp.isInfectorInvaded() ) {
+				agentImmune = becomeImmuneAfterVaccination( hosp.getVaccinatedSusceptibles(), pars );
+				hosp.getVaccinatedSusceptibles().removeAll( agentImmune );
+				hosp.getVaccinatedProtecteds().addAll( agentImmune );
+				agentImmune.clear();	
+	
+				agentImmune = becomeImmuneAfterVaccination( hosp.getVaccinatedExposeds(), pars );
+				hosp.getVaccinatedExposeds().removeAll( agentImmune );
+				hosp.getVaccinatedProtecteds().addAll( agentImmune );
+				agentImmune.clear();
+				
+				agentImmune = becomeImmuneAfterVaccination( hosp.getQuarantinedVaccinatedSusceptibles(), pars );
+				hosp.getQuarantinedVaccinatedSusceptibles().removeAll( agentImmune );
+				hosp.getQuarantinedVaccinatedProtecteds().addAll( agentImmune );
+				agentImmune.clear();	
+	
+				agentImmune = becomeImmuneAfterVaccination( hosp.getQuarantinedVaccinatedExposeds(), pars );
+				hosp.getQuarantinedVaccinatedExposeds().removeAll( agentImmune );
+				hosp.getQuarantinedVaccinatedProtecteds().addAll( agentImmune );
+				agentImmune.clear();	
+			}
 		}
 
 		if( pars.getDebug() > 0 ) {
@@ -305,7 +292,13 @@ public class Step {
 				from.getInfectious().remove( a );
 				Hospital h = toHospList.get( j );
 				h.getInfectious().add( a );
-				h.setInfectorInvaded( true );
+				if( !h.isInfectorInvaded() ) { // newly invaded hospital
+					h.setInfectorInvaded( true );
+					if( h.isVaccinationImplemented() ) {
+						h.lazyVaccination( pars );
+					}
+				}
+				
 				a.setInvader( true );
 			}
 		}
@@ -349,12 +342,16 @@ public class Step {
 	// this is used to transfer to the next compartment.
 	public void stepAge( Parameters pars ){
 		double delta = pars.getStepSize(); 
-		ArrayList<Agent> agents = new ArrayList<Agent>();;
+		List<Agent> agents = new ArrayList<Agent>();
+		
 		for( Hospital hosp : Model.hospitals ) {
 			agents.addAll( hosp.retrieveExposedAgentsFromHospital() );
 		}
-		for( Hospital hosp : Model.hospitalsVaccinationImplemented ) {
-			agents.addAll( hosp.retrieveExposedAgentsFromHospital() );
+		// hospitals where infector did not invade were calculated separately to improve performance
+		for( Hospital hosp : Model.hospitalsVaccinationImplemented ) { 
+			if( hosp.isInfectorInvaded() && !Model.hospitals.contains( hosp ) ) {
+				agents.addAll( hosp.retrieveExposedAgentsFromHospital() );
+			}
 		}
 		for( Agent a : agents ) {
 			double daySinceInfect = a.getDaySinceInfection();
@@ -366,6 +363,7 @@ public class Step {
 			if( daySinceVacc > -1 )
 				a.setDaySinceVaccination( a.getDaySinceVaccination() + delta );
 		}
+		
 		if( pars.getDebug() > 0 ) {
 			System.out.printf( "Day: %.1f, Step.stepAge occurred.\n", Step.currentDay );
 			for(Hospital h : Model.hospitals ) {
@@ -397,6 +395,7 @@ public class Step {
 		for( Hospital hosp : Model.hospitals ) {
 			int numAlreadyIsolated = hosp.getIsolateds().size(); // record the number of people who were already isolated
 			hosp.isolation( pars, rate, max );
+			
 			if( (hosp.getIsolateds().size() - numAlreadyIsolated) > 0 ) { // if anybody were newly isolated
 				hosp.quarantine( pars, rate, max );
 			}

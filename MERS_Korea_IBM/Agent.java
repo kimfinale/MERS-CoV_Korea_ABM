@@ -29,6 +29,8 @@ public class Agent {
 		private double                             durationOfInfectiousness = -999.0;
 		private double                             delayVaccineInducedImmunity = -999.0;
 		private double                             timeToIsolation = -999.0;
+		private boolean                            vaccinated = false;
+
 		private Hospital 						   hospital = null;
 
 		private boolean 						   indexCase = false;
@@ -92,6 +94,7 @@ public class Agent {
 		this.setInfectionStatus( "I" ); 
 		this.setDurationOfInfectiousness( Model.gammaDurationOfInfectiousness.sample() );
 		this.setDaySinceSymptomOnset( 0.0 );
+
 	}
 		
 	
@@ -321,5 +324,11 @@ public class Agent {
 	}
 	public void setIndexCase(boolean indexCase) {
 		this.indexCase = indexCase;
+	}
+	public boolean isVaccinated() {
+		return vaccinated;
+	}
+	public void setVaccinated(boolean vaccinated) {
+		this.vaccinated = vaccinated;
 	}
 }
