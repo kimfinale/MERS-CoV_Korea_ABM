@@ -30,21 +30,22 @@ import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 
 public class Model {
 
-	static ArrayList<Hospital> hospitals = new ArrayList<Hospital>();
-	static ArrayList<Hospital> uninfectedHospitals = new ArrayList<Hospital> ();
+	static ArrayList<Hospital> hospitals 							= new ArrayList<Hospital>();
+	static ArrayList<Hospital> uninfectedHospitals 					= new ArrayList<Hospital> ();
 	// to help implement vaccination
-	static ArrayList<Hospital> hospitalsVaccinationImplemented = new ArrayList<Hospital>();
-
+	static ArrayList<Hospital> hospitalsVaccinationImplemented 		= new ArrayList<Hospital>();
+	// this will track the day when the cases recover and the last element (with delay to establish the end)
+	static ArrayList<Double>  	dayCaseRecovery  					= new ArrayList<Double>();
+	static ArrayList<Double>  	dayCaseSymptomOnset  				= new ArrayList<Double>();
 	static Parameters pars = new Parameters ();
 	static Hospital hosp = new Hospital ();
 	static Utility util = new Utility ();
 	
-	static ArrayList<Integer>  	hospLevel 		= pars.readFile( pars.getFilePathHospLevel() );
-	static ArrayList<Integer>  	hospRegionID 	= pars.readFile( pars.getFilePathHospRegion() );
-	static ArrayList<Double>  	hospPopAtRisk 	= pars.readFileDouble( pars.getFilePathHospSize() );
-	static ArrayList<Double>  	hospLongitude 	= pars.readFileDouble( pars.getFilePathHospLongitude() );
-	static ArrayList<Double>  	hospLatitude 	= pars.readFileDouble( pars.getFilePathHospLatitude() );
-
+	static ArrayList<Integer>  	hospLevel 							= pars.readFile( pars.getFilePathHospLevel() );
+	static ArrayList<Integer>  	hospRegionID 						= pars.readFile( pars.getFilePathHospRegion() );
+	static ArrayList<Double>  	hospPopAtRisk 						= pars.readFileDouble( pars.getFilePathHospSize() );
+	static ArrayList<Double>  	hospLongitude 						= pars.readFileDouble( pars.getFilePathHospLongitude() );
+	static ArrayList<Double>  	hospLatitude 						= pars.readFileDouble( pars.getFilePathHospLatitude() );
 	
 	// random number generators
 	static BitsStreamGenerator RNG = new MersenneTwister();
@@ -80,9 +81,10 @@ public class Model {
 			pars.setRandomSeed( i );
 			
 			double [][] out = runModel( pars );
-//			System.out.println( "vacc p = "  +  pars.getVaccProbPerStep() 
-//			+ ", vacc p for S = " + pars.getVaccProbPerStepSusc() + ", vacc p for E = " + pars.getVaccProbPerStepExp() );
-			
+			for(int k = 0; k < out.length; ++ k ) {
+				System.out.printf( "Day: %d, Cumul case = %.0f\n", k, out[k][6] ); 
+			}
+			System.out.println( "last case recover = " + calcOutbreakDuration() );
 			cumCase.addValue( out[numSteps-1][6] );
 			offspringVariance.addValue( out[numSteps-1][7] );
 			hospitalsWithInfectious.addValue( Model.hospitals.size() );
@@ -177,7 +179,7 @@ public class Model {
 				out[ index ][ 2 ] = getNumPeople( hospitals, "E" );
 				out[ index ][ 3 ] = getNumPeople( hospitals, "I" );
 				out[ index ][ 4 ] = getNumPeople( hospitals, "J" ); 
-				out[ index ][ 5 ] = getNumPeople( hospitals, "R" ); // protected by vaccine
+				out[ index ][ 5 ] = getNumPeople( hospitals, "R" ); 
 				out[ index ][ 6 ] = pars.getCumulInc();
 				out[ index ][ 7 ] = offspringVarianceToMeanRatio( pars );
 				out[ index ][ 8 ] = getHospitalTransmissionOccurred().size(); // to remove duplicates
@@ -191,6 +193,22 @@ public class Model {
 	}
 	
 	
+	
+	
+	
+	///////////////////////////////////////////////////////////////
+	//calcOutbreakDuration()
+	//determine the time when the last case recovered (or died)
+	public static double calcOutbreakDuration() {
+//		double dayLastRecovery = Model.dayCaseRecovery.get( Model.dayCaseRecovery.size() - 1 );
+		double dayLastSymptomOnset = Model.dayCaseSymptomOnset.get( Model.dayCaseSymptomOnset.size() - 1 );
+		return( dayLastSymptomOnset );
+	}
+	
+	
+	
+	
+	
 	///////////////////////////////////////////////////////////////
 	//calHospitalTranmissionOccurred() 
 	public static ArrayList<Hospital> getHospitalTransmissionOccurred() {
@@ -202,6 +220,8 @@ public class Model {
 		}
 		return( list );
 	}
+	
+	
 	
 	
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -311,8 +331,6 @@ public class Model {
 			susc.removeAll( newlyExposed );
 			indexHosp.getExposeds().addAll( newlyExposed );
 		}
-		
-		
 		
 		else if( scenario.equalsIgnoreCase( "Importation") ) {
 			// should I include all hospitals instead of Level 3 or 4 hospitals?

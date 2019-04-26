@@ -70,21 +70,21 @@ public class Hospital {
 			list.add( a );
 			a.setHospital( this );
 		}
-		if( pars.isPreEmptiveVaccination() ) {
-			double fracHCW = pars.getFracHCW();
-			double vaccEff = pars.getVaccCoverage();
-			ArrayList<Agent> susc = this.getSusceptibles();
-			ArrayList<Agent> agentProtected = new ArrayList<Agent>();
-			for( Agent a : susc ) {
-				if( Model.unifFromZeroToOne.sample() < fracHCW * vaccEff ) {
-					a.setInfectionStatus( "VP" );
-					agentProtected.add( a );
-				}
-			}
-			this.getVaccinatedProtecteds().addAll( agentProtected );
-			susc.removeAll( agentProtected );
-			agentProtected.clear();;
-		}
+//		if( pars.isPreEmptiveVaccination() ) {
+//			double fracHCW = pars.getFracHCW();
+//			double vaccEff = pars.getVaccCoverage();
+//			ArrayList<Agent> susc = this.getSusceptibles();
+//			ArrayList<Agent> agentProtected = new ArrayList<Agent>();
+//			for( Agent a : susc ) {
+//				if( Model.unifFromZeroToOne.sample() < fracHCW * vaccEff ) {
+//					a.setInfectionStatus( "VP" );
+//					agentProtected.add( a );
+//				}
+//			}
+//			this.getVaccinatedProtecteds().addAll( agentProtected );
+//			susc.removeAll( agentProtected );
+//			agentProtected.clear();;
+//		}
 	}
 	
 	public Hospital( int n, String s ){
@@ -110,21 +110,21 @@ public class Hospital {
 			a.getVisitedHospitals().add( this );
 		}
 		
-		if( pars.isPreEmptiveVaccination() ) {
-			double fracHCW = pars.getFracHCW();
-			double vaccEff = pars.getVaccCoverage();
-			ArrayList<Agent> susc = this.getSusceptibles();
-			ArrayList<Agent> agentProtected = new ArrayList<Agent>();
-			for( Agent a : susc ) {
-				if( Model.unifFromZeroToOne.sample() < fracHCW * vaccEff ) {
-					a.setInfectionStatus( "VP" );
-					agentProtected.add( a );
-				}
-			}
-			this.getVaccinatedProtecteds().addAll( agentProtected );
-			susc.removeAll( agentProtected );
-			agentProtected.clear();
-		}
+//		if( pars.isPreEmptiveVaccination() ) {
+//			double fracHCW = pars.getFracHCW();
+//			double vaccEff = pars.getVaccCoverage();
+//			ArrayList<Agent> susc = this.getSusceptibles();
+//			ArrayList<Agent> agentProtected = new ArrayList<Agent>();
+//			for( Agent a : susc ) {
+//				if( Model.unifFromZeroToOne.sample() < fracHCW * vaccEff ) {
+//					a.setInfectionStatus( "VP" );
+//					agentProtected.add( a );
+//				}
+//			}
+//			this.getVaccinatedProtecteds().addAll( agentProtected );
+//			susc.removeAll( agentProtected );
+//			agentProtected.clear();
+//		}
 	}
 				
 
@@ -313,6 +313,7 @@ public class Hospital {
 			}
 			if ( a.getDurationOfInfectiousness() <= a.getDaySinceSymptomOnset() ) {
 				a.setInfectionStatus( "R" );
+				Model.dayCaseRecovery.add( Step.currentDay );
 				IToR.add( a );
 			}
 		}
@@ -328,6 +329,7 @@ public class Hospital {
 			if ( a.getDurationOfInfectiousness() <= a.getDaySinceSymptomOnset() ) {
 				a.setInfectionStatus( "JR" );
 				JToJR.add( a );
+				Model.dayCaseRecovery.add( Step.currentDay );
 			}
 		}
 		this.getIsolateds().removeAll( JToJR );

@@ -91,6 +91,7 @@ public class Agent {
 			System.err.println( "Agent.becomeInfectious: infection status have to be E, QE, VE, or QVE. The current state is " + status );
 		}
 		pars.setCumulInc( pars.getCumulInc() + 1 ); // increase the cumulative incidence by 1
+		Model.dayCaseSymptomOnset.add( Step.currentDay );
 		this.setInfectionStatus( "I" ); 
 		this.setDurationOfInfectiousness( Model.gammaDurationOfInfectiousness.sample() );
 		this.setDaySinceSymptomOnset( 0.0 );

@@ -14,7 +14,7 @@ import java.util.Scanner;
 
 public class Parameters {
 	private int 				debug = 0;
-	private int                 numSampleRun = 50;
+	private int                 numSampleRun = 4;
 	private int                 randomSeed = 3;
 	// unit time = day
 	private double              stopTime = 60;
@@ -26,12 +26,13 @@ public class Parameters {
 	// parameter to be estimated
 	private double              rateTransmit = 0.19; //  infectious person can transmit infection to a susceptible person with probability of 0.2 
 	private double              dayDelayBeforeMovingToAnotherHospital = 1.69; //
-	private double              fracHighInfectivity = 0.11827957; // 22/186 cases, who visited multiple healthcare facilities
-	private double              fracReductionLowInfectivity = 0.01265823; //0.1/7.9; // relative reproduction number who remain in one hospital	
+	private double              shapeGammaOffspring = 0.2; // NegBin (Poisson-Gamma) distribution 
+	private double              propSeekingCareFromOtherHospitals = 0.1189189; // 0.1189189; 
+	private double              factorHighRiskTransmissibility = 79.0;
 	
 	private String 				outbreakScenario = "2015";//2015, importation,
 	// vaccination related
-	private boolean 			underVaccinationScenario = true;
+	private boolean 			underVaccinationScenario = false;
 	private String 				vaccinationScenario = "Distance";//Distance, Region, or Hospital
 	private double              vaccCoverage = 0.9;
 	private double              vaccEfficacy = 0.5;
@@ -47,17 +48,13 @@ public class Parameters {
 	private boolean             dayVaccinationStartAdjusted = false; //used as a switch to ensure that vaccination start date is adjusted only once (in response to the number of cases detected)
 	private double              vaccinationTargetRadius = 30;//km
 	
-	private boolean 			preEmptiveVaccination = false; 
-	private boolean             areaTargetedVaccination = false;
-	private boolean 			hospitalTargetedVaccination = false;
-	private int 				numHospitalsForTargetedVaccination = 5;
-	private double              hospitalCoverage = 1.0;
+//	private boolean 			preEmptiveVaccination = false; 
+//	private boolean             areaTargetedVaccination = false;
+//	private boolean 			hospitalTargetedVaccination = false;
+//	private int 				numHospitalsForTargetedVaccination = 5;
+//	private double              hospitalCoverage = 1.0;
 	private double              timeIndexCaseConfirmation = 9.0; // reported time for confirmation of the index case(May 20 after May 11 (onset of symptoms)
-	
-	private double              shapeGammaOffspring = 0.2; // NegBin (Poisson-Gamma) distribution 
-	private double              propSeekingCareFromOtherHospitals = 0.1189189; // 0.1189189; 
-	private double              factorHighRiskTransmissibility = 79.0;
-	
+
 	// Parameters were estimated from Korean data using coarseDataTools package in R
 	private double              shapeGammaDurationOfIncubation = 3.489;	// 
 	private double              rateGammaDurationOfIncubation = 0.502;	//
@@ -89,17 +86,12 @@ public class Parameters {
 	private int               	dayIntervention = 29; // intense intervention (significant increase in isolation rate starts at day 29 after the first case developed symptoms
 	
 	private double              fracVaccTargetPopulation = 1.0;
-	
-
-
-	
 	private int[]               vaccTargetRegionID = { 0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
 	// 0=Gangwon, 1=Gyeonggi, 2=Gyeongnam,
 	// 3=Gyeongbuk, 4=Gwangju, 5=Daegu,
 	// 6=Daejeon, 7=Busan, 8=Seoul,
 	// 9=Sejong City, 10=Ulsan, 11=Incheon, 12=Jeonnam, 13=Jeonbuk,
 	// 14=Jeju, 15=Chungnam, 16=Chungbuk
-
 	private double              radiusHospitalSearch = 30; //km 
 	private double 				timeImmunityDevelopment = 14.0; //time needed for the desired proportion of vaccine recipients, as dictated by vaccine efficacy, is protected 
 	//time needed for the desired vaccine coverage is completed
@@ -415,18 +407,18 @@ public class Parameters {
 //	public void setVaccCoveragePatient(double vaccCoveragePatient) {
 //		this.vaccCoveragePatient = vaccCoveragePatient;
 //	}
-	public double getFracReductionLowInfectivity() {
-		return fracReductionLowInfectivity;
-	}
-	public void setFracReductionLowInfectivity(double d) {
-		this.fracReductionLowInfectivity = d;
-	}
-	public double getFracHighInfectivity() {
-		return fracHighInfectivity;
-	}
-	public void setFracHighInfectivity(double d) {
-		this.fracHighInfectivity = d;
-	}
+//	public double getFracReductionLowInfectivity() {
+//		return fracReductionLowInfectivity;
+//	}
+//	public void setFracReductionLowInfectivity(double d) {
+//		this.fracReductionLowInfectivity = d;
+//	}
+//	public double getFracHighInfectivity() {
+//		return fracHighInfectivity;
+//	}
+//	public void setFracHighInfectivity(double d) {
+//		this.fracHighInfectivity = d;
+//	}
 	public double getDayVaccinationStart() {
 		return dayVaccinationStart;
 	}
@@ -471,12 +463,12 @@ public class Parameters {
 //	public void setRateMoveToOtherHospital( double rate ) {
 //		this.rateMoveToOtherHospital = rate;
 //	}
-	public double getHospitalCoverage() {
-		return hospitalCoverage;
-	}
-	public void setHospitalCoverage(double coverage) {
-		this.hospitalCoverage = coverage;
-	}
+//	public double getHospitalCoverage() {
+//		return hospitalCoverage;
+//	}
+//	public void setHospitalCoverage(double coverage) {
+//		this.hospitalCoverage = coverage;
+//	}
 	public double getRelativeVaccEfficacyPostExposure() {
 		return relativeVaccEfficacyPostExposure;
 	}
@@ -556,12 +548,12 @@ public class Parameters {
 	public void setFactorHighRiskTransmissibility( double factorHighRiskTransmissibility) {
 		this.factorHighRiskTransmissibility = factorHighRiskTransmissibility;
 	}
-	public boolean isAreaTargetedVaccination() {
-		return areaTargetedVaccination;
-	}
-	public void setAreaTargetedVaccination(boolean areaTargetedVaccination) {
-		this.areaTargetedVaccination = areaTargetedVaccination;
-	}
+//	public boolean isAreaTargetedVaccination() {
+//		return areaTargetedVaccination;
+//	}
+//	public void setAreaTargetedVaccination(boolean areaTargetedVaccination) {
+//		this.areaTargetedVaccination = areaTargetedVaccination;
+//	}
 	
 	public double getMeanDelayVaccineInducedImmunity() {
 		return meanDelayVaccineInducedImmunity;
@@ -581,12 +573,12 @@ public class Parameters {
 	public void setVaccTargetRegionID( int[] vaccTargetRegionID) {
 		this.vaccTargetRegionID = vaccTargetRegionID;
 	}
-	public boolean isPreEmptiveVaccination() {
-		return preEmptiveVaccination;
-	}
-	public void setPreEmptiveVaccination(boolean preEmptiveVaccination) {
-		this.preEmptiveVaccination = preEmptiveVaccination;
-	}
+//	public boolean isPreEmptiveVaccination() {
+//		return preEmptiveVaccination;
+//	}
+//	public void setPreEmptiveVaccination(boolean preEmptiveVaccination) {
+//		this.preEmptiveVaccination = preEmptiveVaccination;
+//	}
 	public String getFilePathHospLongitude() {
 		return filePathHospLongitude;
 	}
@@ -605,18 +597,18 @@ public class Parameters {
 	public void setRadiusHospitalSearch(double radiusHospitalSearch) {
 		this.radiusHospitalSearch = radiusHospitalSearch;
 	}
-	public boolean isHospitalTargetedVaccination() {
-		return hospitalTargetedVaccination;
-	}
-	public void setHospitalTargetedVaccination(boolean hospitalTargetedVaccination) {
-		this.hospitalTargetedVaccination = hospitalTargetedVaccination;
-	}
-	public int getNumHospitalsForTargetedVaccination() {
-		return numHospitalsForTargetedVaccination;
-	}
-	public void setNumHospitalsForTargetedVaccination(int numHospitalsForTargetedVaccination) {
-		this.numHospitalsForTargetedVaccination = numHospitalsForTargetedVaccination;
-	}
+//	public boolean isHospitalTargetedVaccination() {
+//		return hospitalTargetedVaccination;
+//	}
+//	public void setHospitalTargetedVaccination(boolean hospitalTargetedVaccination) {
+//		this.hospitalTargetedVaccination = hospitalTargetedVaccination;
+//	}
+//	public int getNumHospitalsForTargetedVaccination() {
+//		return numHospitalsForTargetedVaccination;
+//	}
+//	public void setNumHospitalsForTargetedVaccination(int numHospitalsForTargetedVaccination) {
+//		this.numHospitalsForTargetedVaccination = numHospitalsForTargetedVaccination;
+//	}
 	public int getThresholdNumberCaseForVaccinationInitiation() {
 		return thresholdNumberCaseForVaccinationInitiation;
 	}
